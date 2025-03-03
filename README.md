@@ -1,3 +1,51 @@
+Calibration Image
+```markdown
+# โหลดภาพตารางหมากรุก (เช่นไฟล์ชื่อ chessboard*.jpg)
+images = glob.glob('chessboard/chessboard*.jpg')
+print(images)
+
+preview_images = []
+
+for fname in images:
+    img = cv2.imread(fname)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    
+    # หามุมของตารางหมากรุก
+    ret, corners = cv2.findChessboardCorners(gray, chessboard_size, None)
+    
+    if ret:
+        # ปรับมุมให้ละเอียด
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+        corners2 = cv2.cornerSubPix(gray, corners, (11,11), (-1,-1), criteria)
+        
+        # เก็บค่า points
+        objpoints.append(objp)
+        imgpoints.append(corners2)
+        
+        # วาดและแสดงผลมุม
+        img_draw = cv2.drawChessboardCorners(img.copy(), chessboard_size, corners2, ret)
+        # cv2.imshow('Detected Corners', img_draw)
+        # cv2.waitKey(0)
+
+        # รวมภาพต้นฉบับกับภาพที่มีมุมที่ detect
+        combined_img = cv2.hconcat([img, img_draw])
+        preview_images.append(combined_img)
+
+for preview in preview_images:
+    cv2.namedWindow('Calibration Preview', cv2.WINDOW_NORMAL)  # อนุญาตให้ปรับขนาดได้
+    cv2.resizeWindow('Calibration Preview', 800, 600)  # กำหนดขนาดเป็น 600x300 px
+    cv2.imshow('Calibration Preview', preview)
+    cv2.waitKey(0)
+
+if len(objpoints) > 0:
+    # Calibrate
+    ret, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(
+        objpoints, imgpoints, gray.shape[::-1], None, None
+    )
+
+```
+
+Undistort Image
 
 ```markdown
 def undistort_image(img, camera_matrix, dist_coeffs):
