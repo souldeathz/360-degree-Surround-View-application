@@ -1,3 +1,12 @@
+library installation
+
+```markdown
+pip install numpy
+pip install opencv-python
+pip install matplotlib
+pip install pyyaml
+```
+
 Calibration Image
 ```markdown
 # โหลดภาพตารางหมากรุก (เช่นไฟล์ชื่อ chessboard*.jpg)
