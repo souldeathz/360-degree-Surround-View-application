@@ -33,23 +33,28 @@ imgpoints = []  # รายการเก็บ 2D points
 
 # ตั้งค่าโฟลเดอร์และพารามิเตอร์
 calibration_folder = 'Cal_V2'  # โฟลเดอร์ภาพคาลิเบรต
-test_folder = 'Front2'          # โฟลเดอร์ภาพทดสอบ
-# test_folder = 'Left5'          # โฟลเดอร์ภาพทดสอบ
-images = glob.glob(f'chessboard/{calibration_folder}/chessboard*.jpg')
-print("Found images:", images)
 
+# test_folder = 'Left5'          # โฟลเดอร์ภาพทดสอบ
+# test_folder = 'front6'
+# test_folder = 'left6'
+# test_folder = 'Right6'
+test_folder = 'Rear6'
 # อ่านภาพตัวอย่างเพื่อทดสอบ undistort
 img_test = cv2.imread(f'input_test_distortion/{test_folder}.jpg')
 
+images = glob.glob(f'chessboard/{calibration_folder}/chessboard*.jpg')
+print("Found images:", images)
+
+
 # ตั้งค่าสถานะการคาลิเบรต
-cal_bool = True  # True = คาลิเบรตใหม่, False = ใช้ค่าที่กำหนด
-Cal_M = False    # True = ใช้ภาพคาลิเบรต, False = ใช้ค่าคงที่
+Benjamas_param_bool = True 
+Cal_M = False    # True = ใช้ภาพคาลิเบรต, False = ใช้ค่าคงที่จากคาลิเบรตครั้งก่อน
 
 camera_matrix = None
 dist_coeffs = None
 resolution = None
 
-if cal_bool:
+if Benjamas_param_bool:
     if Cal_M:
         # คาลิเบรตจากภาพถ่าย
         for fname in images:
@@ -81,7 +86,6 @@ if cal_bool:
         dist_coeffs = np.array([-0.29384105, 0.08857583, 0.0017715, -0.00090177, -0.01231684])
         resolution = np.array([1280, 720], dtype=np.int32)  # ตั้งค่าขนาดภาพตามที่คาดไว้
 else:
-    # ใช้ค่าเฉลี่ยทั่วไป
     fx, fy = 528.94, 530.80
     cx, cy = 633.92, 343.28
     camera_matrix = get_intrinsic_matrix(fx, fy, cx, cy)
@@ -99,8 +103,7 @@ os.makedirs('yaml', exist_ok=True)
 os.makedirs('out', exist_ok=True)
 
 # บันทึกข้อมูลคาลิเบรตในรูปแบบ OpenCV YAML
-# บันทึกข้อมูลคาลิเบรตในรูปแบบ OpenCV YAML
-yaml_filename = os.path.join('yaml', f'{calibration_folder}_calibration.yaml')
+yaml_filename = os.path.join('yaml', f'calibration_data.yaml')
 fs = cv2.FileStorage(yaml_filename, cv2.FILE_STORAGE_WRITE)
 fs.write("camera_matrix", camera_matrix)
 fs.write("dist_coeffs", dist_coeffs)

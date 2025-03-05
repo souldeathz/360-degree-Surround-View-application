@@ -3,11 +3,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # โหลดภาพและแปลงเป็น BGRA (เพิ่มช่อง alpha)
-img1 = cv2.imread('image_F.jpg')
-img2 = cv2.imread('image_L.jpg')
+img1 = cv2.imread('out2/image_F.jpg')
+img2 = cv2.imread('out2/image_L.jpg')
 
-img3 = cv2.imread('image_R.jpg')
-img4 = cv2.imread('image_REAR.jpg')
+img3 = cv2.imread('out2/image_R.jpg')
+img4 = cv2.imread('out2/image_REAR.jpg')
+
+# img1 = cv2.imread('out2/front.png')
+# img2 = cv2.imread('out2/left.png')
+
+# img3 = cv2.imread('out2/right.png')
+# img4 = cv2.imread('out2/back.png')
+
 
 img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2BGRA)
 img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2BGRA)
