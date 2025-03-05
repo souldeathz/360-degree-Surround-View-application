@@ -23,7 +23,10 @@ def load_calibration_parameters(yaml_filename):
 if __name__ == "__main__":
 
     # ตั้งค่าโฟลเดอร์และพารามิเตอร์
-    test_folder = 'Rear6'
+
+    # test_folder = 'front6'
+    test_folder = 'Left6'    
+    # test_folder = 'Rear6'
 
     # โหลด intrinsic parameters จากไฟล์ YAML
     yaml_filename = 'yaml/calibration_data.yaml'
@@ -38,6 +41,8 @@ if __name__ == "__main__":
     cv2.destroyAllWindows()
 
     undistorted = cv2.undistort(img_test, camera_matrix, dist_coeffs)
+    # if 'Left' in test_folder:
+    #     undistorted = cv2.rotate(undistorted, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
     # ให้ผู้ใช้คลิกเลือก 4 จุดในภาพ
     clicked_points = []
@@ -53,11 +58,34 @@ if __name__ == "__main__":
     print("Selected source points:", src_points)
 
     # กำหนด destination points สำหรับการแปลง perspective
+
+    # if 'front' in test_folder:
+    #     dst_points = np.float32([
+    #         # [450, 310],
+    #         # [570, 310],
+    #         # [450, 410],
+    #         # [570, 410]
+    #         [300, 300],
+    #         [520, 300],
+    #         [300, 420],
+    #         [520, 420]            
+    #     ])
+    # elif  'Left' in test_folder:
+    #         dst_points = np.float32([
+    #             # [310, 524],
+    #             # [410, 524],
+    #             [300, 300],
+    #             [410, 420],                
+    #             [310, 624],
+    #             [410, 624]
+    #     ])
+    # else:
+        # Add other test_folder cases here if needed
     dst_points = np.float32([
-        [420, 300],
-        [780, 300],
-        [420, 460],
-        [780, 460]
+        [420, 300],  # จุดที่ 1
+        [780, 300],  # จุดที่ 2
+        [420, 460],  # จุดที่  3       
+        [780, 460]  # จุดที่ 4  
     ])
 
     # คำนวณ perspective transform matrix และทำการ warp image
