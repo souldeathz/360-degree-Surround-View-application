@@ -5,15 +5,7 @@ import glob
 import matplotlib.pyplot as plt
 
 # ฟังก์ชัน callback เมื่อมีการคลิกเมาส์ (ไม่ถูกใช้งานในโค้ดนี้)
-clicked_points = []
 img_display = None
-
-def click_event(event, x, y, flags, param):
-    global clicked_points, img_display
-    if event == cv2.EVENT_LBUTTONDOWN:
-        clicked_points.append((x, y))
-        cv2.circle(img_display, (x, y), 5, (0, 255, 0), -1)
-        cv2.imshow("Select 4 Points", img_display)
 
 def get_intrinsic_matrix(fx, fy, cx, cy):
     return np.array([[fx, 0, cx],
@@ -34,7 +26,7 @@ imgpoints = []  # รายการเก็บ 2D points
 # ตั้งค่าโฟลเดอร์และพารามิเตอร์
 calibration_folder = 'Cal_V2'  # โฟลเดอร์ภาพคาลิเบรต
 
-# test_folder = 'Left5'          # โฟลเดอร์ภาพทดสอบ
+# โฟลเดอร์ภาพทดสอบ
 test_folder = 'front6'
 # test_folder = 'left6'
 # test_folder = 'Right6'
@@ -86,6 +78,7 @@ if Benjamas_param_bool:
         dist_coeffs = np.array([-0.29384105, 0.08857583, 0.0017715, -0.00090177, -0.01231684])
         resolution = np.array([1280, 720], dtype=np.int32)  # ตั้งค่าขนาดภาพตามที่คาดไว้
 else:
+    # ใช้ค่าคงที่จากคาลิเบรต (Benjamas)
     fx, fy = 528.94, 530.80
     cx, cy = 633.92, 343.28
     camera_matrix = get_intrinsic_matrix(fx, fy, cx, cy)
