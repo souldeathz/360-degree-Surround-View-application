@@ -35,10 +35,10 @@ imgpoints = []  # รายการเก็บ 2D points
 calibration_folder = 'Cal_V2'  # โฟลเดอร์ภาพคาลิเบรต
 
 # test_folder = 'Left5'          # โฟลเดอร์ภาพทดสอบ
-# test_folder = 'front6'
+test_folder = 'front6'
 # test_folder = 'left6'
 # test_folder = 'Right6'
-test_folder = 'Rear6'
+# test_folder = 'Rear6'
 # อ่านภาพตัวอย่างเพื่อทดสอบ undistort
 img_test = cv2.imread(f'input_test_distortion/{test_folder}.jpg')
 
