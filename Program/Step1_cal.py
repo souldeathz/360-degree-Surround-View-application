@@ -96,11 +96,14 @@ os.makedirs('yaml', exist_ok=True)
 os.makedirs('out', exist_ok=True)
 
 # บันทึกข้อมูลคาลิเบรตในรูปแบบ OpenCV YAML
-yaml_filename = os.path.join('yaml', f'calibration_data.yaml')
-fs = cv2.FileStorage(yaml_filename, cv2.FILE_STORAGE_WRITE)
-fs.write("camera_matrix", camera_matrix)
-fs.write("dist_coeffs", dist_coeffs)
-fs.write("resolution", resolution)
+for view in ["front", "left", "rear", "right"]:
+    yaml_filename = os.path.join('yaml', f'calibration_data_{view}.yaml')
+    fs = cv2.FileStorage(yaml_filename, cv2.FILE_STORAGE_WRITE)
+    fs.write("camera_matrix", camera_matrix)
+    fs.write("dist_coeffs", dist_coeffs)
+    fs.write("resolution", resolution)
+    fs.release()
+    print(f"บันทึกข้อมูลคาลิเบรตลงใน {yaml_filename}")
 
 # บันทึก rvecs และ tvecs หากมีค่า (เมื่อ Cal_M = True)
 if Cal_M and 'rvecs' in locals() and 'tvecs' in locals():

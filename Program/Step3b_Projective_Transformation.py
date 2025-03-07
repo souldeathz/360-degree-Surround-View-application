@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import os
 
 
 def load_calibration_parameters(yaml_filename):
@@ -84,20 +85,34 @@ if __name__ == "__main__":
     # ตั้งค่าโฟลเดอร์และพารามิเตอร์
 
     #src
-    test_folder = 'front6'
+    test_folder = 'front7'
     chessboard_folder = 'chessboard/warped_chessboard_front.png'
-    # test_folder = 'Left6'   
+    # test_folder = 'Left7'   
     # chessboard_folder = 'chessboard/warped_chessboard_left.png' 
-    # test_folder = 'Rear6'
+    # test_folder = 'Rear7'
     # chessboard_folder = 'chessboard/warped_chessboard_rear.png' 
-    # test_folder = 'Right6'
+    # test_folder = 'Right7'
     # chessboard_folder = 'chessboard/warped_chessboard_right.png' 
 
     # โหลด intrinsic parameters จากไฟล์ YAML
-    yaml_filename = 'yaml/calibration_data.yaml'
-    camera_matrix, dist_coeffs, resolution = load_calibration_parameters(yaml_filename)
-    print("Loaded Camera Matrix:\n", camera_matrix)
-    print("Loaded Distortion Coefficients:\n", dist_coeffs)
+    view = None
+    if 'front' in test_folder.lower():
+        view = 'front'
+    elif 'left' in test_folder.lower():
+        view = 'left'
+    elif 'rear' in test_folder.lower():
+        view = 'rear'
+    elif 'right' in test_folder.lower():
+        view = 'right'
+
+    yaml_filename = []
+    if view in ["front", "left", "rear", "right"]:
+        yaml_filename = os.path.join('yaml', f'calibration_data_{view}.yaml')
+        camera_matrix, dist_coeffs, resolution = load_calibration_parameters(yaml_filename)
+        print("Loaded Camera Matrix:\n", camera_matrix)
+        print("Loaded Distortion Coefficients:\n", dist_coeffs)
+    else:
+        print(f"Error: Unsupported view '{view}'")
 
     # หากต้องการ undistort ภาพใหม่ สามารถ uncomment โค้ดด้านล่างได้
     img_src = cv2.imread(f'input_test_distortion/{test_folder}.jpg')
@@ -116,12 +131,28 @@ if __name__ == "__main__":
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-    H = exCalib(img_src_undistorted, img_dst,test_folder)
+    H = exCalib(img_src_undistorted, img_dst, test_folder)
+    
+    # Save the homography matrix to the same YAML file
+    fs = cv2.FileStorage(yaml_filename, cv2.FILE_STORAGE_READ)
+    camera_matrix = fs.getNode("camera_matrix").mat()
+    dist_coeffs = fs.getNode("dist_coeffs").mat()
+    resolution = fs.getNode("resolution").mat()
+    fs.release()
+
+    fs = cv2.FileStorage(yaml_filename, cv2.FILE_STORAGE_WRITE)
+    fs.write("camera_matrix", camera_matrix)
+    fs.write("dist_coeffs", dist_coeffs)
+    fs.write("resolution", resolution)
+    fs.write("homography", H)
+    fs.release()
+    print(f"Homography matrix saved to {yaml_filename}")
     print("Computed Homography:\n", H)
 
     output_folder = 'out2'
     # (Optional) apply the homography to warp the source image to the destination view
     height, width = img_dst.shape[:2]
+    print("Destination Image Size:", width, height)
     warped = cv2.warpPerspective(img_src_undistorted, H, (width, height))
     
 
