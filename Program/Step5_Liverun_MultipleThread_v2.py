@@ -1,8 +1,9 @@
 import cv2
-import numpy as np
 import os
+import numpy as np
 import time
-from image_processing import LuminanceBalancer, ImageStitcher, ImageAdjuster
+import threading
+from image_processing import ImageStitcher
 
 class ImageProcessor:
     def __init__(self, dataset_path, car_image_path, display_width=800, display_height=600, map_width=1040, map_height=1191):
@@ -82,47 +83,53 @@ class ImageProcessor:
         
         return processed_image, warped_rgb
     
+    def grab_image_from_folder(self, folder, filename, images, warped_rgba_, index):
+        img_path = os.path.join(self.dataset_path, folder, filename)
+        img = cv2.imread(img_path)
+        if img is not None:
+            processed_img, warped_rgba = self.process_image(img, folder)
+            images[index] = processed_img
+            warped_rgba_[index] = warped_rgba
+
     def run(self):
-            index = 0
-            while True:
-                filename = os.listdir(os.path.join(self.dataset_path, self.folders[0]))[index]
-                if filename.endswith(('.png', '.jpg', '.jpeg')):
-                    images = []
-                    warped_rgba_ = []
-                    start_time = time.time()
+        index = 0
+        while True:
+            filename = os.listdir(os.path.join(self.dataset_path, self.folders[0]))[index]
+            if filename.endswith(('.png', '.jpg', '.jpeg')):
+                images = [None] * len(self.folders)
+                warped_rgba_ = [None] * len(self.folders)
+                threads = []
+                start_time = time.time()
 
-                    for folder in self.folders:
-                        img_path = os.path.join(self.dataset_path, folder, filename)
-                        img = cv2.imread(img_path)
-                        if img is not None:
-                            processed_img, warped_rgba = self.process_image(img, folder)
-                            images.append(processed_img)
-                            warped_rgba_.append(warped_rgba)
+                for i, folder in enumerate(self.folders):
+                    thread = threading.Thread(target=self.grab_image_from_folder, args=(folder, filename, images, warped_rgba_, i))
+                    threads.append(thread)
+                    thread.start()
+
+                for thread in threads:
+                    thread.join()
+
+                if len(images) == 4:
+                    final_merged_image = ImageStitcher.get_weights_and_masks(warped_rgba_)
+
+                    end_time = time.time()
+                    process_time = end_time - start_time
+                    print(f"Processed time in {process_time:.2f} seconds")
+
+                    resized_width = self.display_width // 2
+                    resized_height = self.display_height // 2
+                    resized_images = [cv2.resize(img, (resized_width, resized_height)) for img in images]
+                    top_row = np.hstack((resized_images[0], resized_images[1]))
+                    bottom_row = np.hstack((resized_images[2], resized_images[3]))
+                    merged_Display_image = np.vstack((top_row, bottom_row))
                     
-                    if len(images) == 4:
-
-                        # ตัวอย่างการใช้ get_weights_and_masks เพื่อรวมภาพ
-                        final_merged_image = ImageStitcher.get_weights_and_masks(warped_rgba_)
-
-                        end_time = time.time()
-                        process_time = end_time - start_time
-                        print(f"Processed time in {process_time:.2f} seconds")
-
-                        resized_width = self.display_width // 2
-                        resized_height = self.display_height // 2
-                        resized_images = [cv2.resize(img, (resized_width, resized_height)) for img in images]
-                        top_row = np.hstack((resized_images[0], resized_images[1]))
-                        bottom_row = np.hstack((resized_images[2], resized_images[3]))
-                        merged_Display_image = np.vstack((top_row, bottom_row))
-                        
-                        cv2.imshow("Merged Image", merged_Display_image)
-                        # cv2.imshow("Merged Image with Car Overlay", merged_car_image)
-                        cv2.imshow("Final Merged Image", final_merged_image)
-                        cv2.waitKey(1)
-                
-                index += 1
-                if index >= len(os.listdir(os.path.join(self.dataset_path, self.folders[0]))):
-                    index = 0
+                    cv2.imshow("Merged Image", merged_Display_image)
+                    cv2.imshow("Final Merged Image", final_merged_image)
+                    cv2.waitKey(1)
+            
+            index += 1
+            if index >= len(os.listdir(os.path.join(self.dataset_path, self.folders[0]))):
+                index = 0
 
 if __name__ == '__main__':
     dataset_path = "C:/Users/redon/Downloads/football1-20250310T140812Z-001/football1"

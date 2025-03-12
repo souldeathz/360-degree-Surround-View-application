@@ -2,6 +2,7 @@ import cv2
 import os
 import numpy as np
 import time
+import threading
 
 # Define the path to the dataset
 # dataset_path = "Dataset/liverun_Round1"
@@ -137,19 +138,29 @@ def process_image(image, cameraID):
 # Loop through each folder and display the images
 index = 0
 while True:
-    filename = os.listdir(os.path.join(dataset_path, folders[0]))[index]
-    if filename.endswith(('.png', '.jpg', '.jpeg')):
-        images = []
-        warped_rgba_ = []
-        start_time = time.time()  # Start time for processing
+    def grab_image_from_folder(folder, filename, images, warped_rgba_, index):
 
-        for folder in folders:
-            img_path = os.path.join(dataset_path, folder, filename)
-            img = cv2.imread(img_path)
-            if img is not None:
-                processed_img,warped_rgba = process_image(img,folder)
-                images.append(processed_img)
-                warped_rgba_.append(warped_rgba)
+        img_path = os.path.join(dataset_path, folder, filename)
+        img = cv2.imread(img_path)
+        if img is not None:
+            processed_img, warped_rgba = process_image(img, folder)
+            images[index] = processed_img
+            warped_rgba_[index] = warped_rgba
+
+    while True:
+        start_time = time.time()  # Start time for processing        
+        filename = os.listdir(os.path.join(dataset_path, folders[0]))[index]
+        if filename.endswith(('.png', '.jpg', '.jpeg')):
+            images = [None] * len(folders)
+            warped_rgba_ = [None] * len(folders)
+            threads = []
+            for i, folder in enumerate(folders):
+                thread = threading.Thread(target=grab_image_from_folder, args=(folder, filename, images, warped_rgba_, i))
+                threads.append(thread)
+                thread.start()
+
+            for thread in threads:
+                thread.join()
         
         if len(images) == 4:
 
@@ -181,6 +192,6 @@ while True:
             cv2.imshow("Merged Image with Car Overlay", merged_car_image)
             cv2.waitKey(10)  # Wait for 0.5 seconds
     
-    index += 1
-    if index >= len(os.listdir(os.path.join(dataset_path, folders[0]))):
-        index = 0
+        index += 1
+        if index >= len(os.listdir(os.path.join(dataset_path, folders[0]))):
+            index = 0

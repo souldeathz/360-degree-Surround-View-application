@@ -1,68 +1,104 @@
+"""
+Step4_merge.py
+--------------
+This script processes and merges images from a 360-degree surround view system.
+It performs:
+1. Loading and validating images from different camera angles (front, left, rear, right).
+2. Merging images using weighted masks and alpha blending.
+3. Adjusting luminance to balance lighting across images.
+4. Overlaying a car image using perspective transformation.
+5. Displaying the final comparison of merged images.
+
+Dependencies:
+- OpenCV (cv2)
+- NumPy
+- PIL (Pillow)
+
+Usage:
+Run the script to process images and display results.
+
+Author: [Your Name]
+Date: [Date]
+"""
+
 import cv2
 import numpy as np
+from PIL import Image
+from param_settings import xl, xr, yt, yb
+from image_processing import LuminanceBalancer, ImageStitcher, ImageAdjuster
 
-def merge_images(images, mode='hard_overlay', alpha=0.25):
-    height, width, _ = images[0].shape
-    merged_image = np.zeros((height, width, 3), dtype=np.uint8)
+def load_image(path):
+    """
+    Load an image from a given file path.
     
-    if mode == 'hard_overlay':
-        for img in images:
-            mask = (img != 0).any(axis=2)
-            merged_image[mask] = img[mask]
+    Args:
+        path (str): The path to the image file.
     
-    elif mode == 'alpha_blend':
-        total_weight = alpha * len(images)
-        for img in images:
-            merged_image = cv2.addWeighted(merged_image, 1, img, alpha, 0)
-        merged_image = cv2.convertScaleAbs(merged_image * (1/total_weight))
+    Returns:
+        np.ndarray: The loaded image.
     
-    return merged_image
+    Raises:
+        FileNotFoundError: If the image file is not found or cannot be loaded.
+    """
+    image = cv2.imread(path)
+    if image is None:
+        raise FileNotFoundError(f"Error: Could not load image from {path}")
+    return image
 
-def overlay_image_perspective(background, overlay, dst_points):
-    src_points = np.float32([
-        [0, 0],
-        [overlay.shape[1] - 1, 0],
-        [0, overlay.shape[0] - 1],
-        [overlay.shape[1] - 1, overlay.shape[0] - 1]
+def main():
+    # Load images from different camera angles
+    try:
+        front = load_image('out_merged_Images/front_warped_image.png')
+        left = load_image('out_merged_Images/Left_warped_image.png')
+        rear = load_image('out_merged_Images/Rear_warped_image.png')
+        right = load_image('out_merged_Images/Right_warped_image.png')
+        car = cv2.imread('Dataset/golf_car.png', cv2.IMREAD_UNCHANGED)  # Load car image with alpha channel
+
+        images = [front, left, rear, right]
+
+    except FileNotFoundError as e:
+        print(e)
+        return  # Exit if any image fails to load
+
+    # Ensure all images are loaded successfully before processing
+    if any(img is None for img in images):
+        print("One or more images failed to load. Exiting.")
+        return
+
+    # Merge images using weighted masks
+    final_merged_image = ImageStitcher.get_weights_and_masks(images)
+    cv2.imwrite('out_merged_Images/final_merged_image.png', final_merged_image)
+
+    # Blend images using selected mode
+    mode = 'alpha_blend'  # Options: 'alpha_blend' or 'hard_overlay'
+    merged = ImageAdjuster.merge_images(images, mode=mode, alpha=0.25)
+
+    # Apply white balance correction to merged image
+    white_balanced = LuminanceBalancer.make_white_balance(merged)
+    cv2.imwrite(f'out_merged_Images/white_balanced_result_{mode}.png', white_balanced)
+
+    # Define destination points for perspective transformation
+    dst_points = np.float32([
+        [465, 465],  # Top-left corner
+        [575, 465],  # Top-right corner
+        [465, 685],  # Bottom-left corner
+        [575, 685]   # Bottom-right corner
     ])
-    
-    matrix = cv2.getPerspectiveTransform(src_points, dst_points)
-    warped_overlay = cv2.warpPerspective(overlay, matrix, (background.shape[1], background.shape[0]))
-    
-    alpha_channel = warped_overlay[:, :, 3] / 255.0
-    for c in range(0, 3):
-        background[:, :, c] = alpha_channel * warped_overlay[:, :, c] + (1 - alpha_channel) * background[:, :, c]
-    
-    return background
 
-# Load images
-front = cv2.imread('out2/front6_warped_image.png')
-left = cv2.imread('out2/Left6_warped_image.png')
-rear = cv2.imread('out2/Rear6_warped_image.png')
-right = cv2.imread('out2/Right6_warped_image.png')
-car = cv2.imread('images/golf_car.png', cv2.IMREAD_UNCHANGED)  # Load car image with alpha channel
+    # Overlay the car image onto the final merged images
+    final_merged_image_car = ImageAdjuster.overlay_image_perspective(final_merged_image, car, dst_points)
+    white_balanced_car = ImageAdjuster.overlay_image_perspective(white_balanced, car, dst_points)
 
-# Image overlay order (last image in the list will be on top)
-images = [front, left, rear, right]
+    # Combine both processed images side by side for comparison
+    comparison_image = np.hstack((white_balanced_car, final_merged_image_car))
 
-# Choose image blending mode ['hard_overlay', 'alpha_blend']
-# mode = 'alpha_blend'
-mode = 'hard_overlay'
-result = merge_images(images, mode=mode, alpha=0.25)
+    # Resize the comparison image to fit within 1440x990 resolution
+    comparison_image_resized = cv2.resize(comparison_image, (1440, 990))
 
-# Define destination points for perspective transformation
-dst_points = np.float32([
-    [465, 465],  # Point 1
-    [575, 465],  # Point 2
-    [465, 685],  # Point 3
-    [575, 685]   # Point 4
-])
+    # Display the comparison image
+    cv2.imshow('Comparison: White Balanced Result (Left) vs Final Merged Image (Right)', comparison_image_resized)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
-# Overlay car image at specified coordinates
-result = overlay_image_perspective(result, car, dst_points)
-
-# Save and display result
-cv2.imwrite(f'out2/merged_result_{mode}.png', result)
-cv2.imshow('Result', result)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+if __name__ == '__main__':
+    main()

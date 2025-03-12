@@ -12,19 +12,19 @@ shift_h = 300
 
 # size of the gap between the calibration pattern and the car
 # in horizontal and vertical directions
-inn_shift_w = 20
-inn_shift_h = 50
+inn_shift_w = 45
+inn_shift_h = 45
 
 # total width/height of the stitched image
-total_w = 140 + 2 * shift_w
-total_h = 100 + 2 * shift_h
+total_w = 1040
+total_h = 1191
 
 # four corners of the rectangular region occupied by the car
 # top-left (x_left, y_top), bottom-right (x_right, y_bottom)
-xl = shift_w + 110 + inn_shift_w
-xr = total_w - xl
-yt = shift_h + 250 + inn_shift_h
-yb = total_h - yt
+xl = 465
+xr = 575
+yt = 465
+yb = 685
 # --------------------------------------------------------------------
 
 project_shapes = {
@@ -59,5 +59,4 @@ project_keypoints = {
               (shift_h + 720, shift_w + 160)]
 }
 
-car_image = cv2.imread(os.path.join(os.getcwd(), "images", "car.png"))
-car_image = cv2.resize(car_image, (xr - xl, yb - yt))
+
