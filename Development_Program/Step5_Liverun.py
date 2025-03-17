@@ -5,8 +5,8 @@ import time
 
 # Define the path to the dataset
 # dataset_path = "Dataset/liverun_Round1"
-dataset_path = "C:/Users/redon/Downloads/football1-20250310T140812Z-001/football1"
-car = cv2.imread('images/golf_car.png', cv2.IMREAD_UNCHANGED)  # Load car image with alpha channel
+dataset_path = "../Dataset/liverun_outdoor/football1"
+car = cv2.imread('../Dataset/golf_car.png', cv2.IMREAD_UNCHANGED)  # Load car image with alpha channel
 folders = ["front", "left", "rear", "right"]
 
 display_width = 800

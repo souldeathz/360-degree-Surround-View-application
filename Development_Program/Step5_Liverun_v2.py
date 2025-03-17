@@ -3,6 +3,7 @@ import numpy as np
 import os
 import time
 from image_processing import LuminanceBalancer, ImageStitcher, ImageAdjuster
+from param_settings import Golf_img_Path
 
 class ImageProcessor:
     def __init__(self, dataset_path, car_image_path, display_width=800, display_height=600, map_width=1040, map_height=1191):
@@ -125,7 +126,7 @@ class ImageProcessor:
                     index = 0
 
 if __name__ == '__main__':
-    dataset_path = "C:/Users/redon/Downloads/football1-20250310T140812Z-001/football1"
-    car_image_path = 'images/golf_car.png'
+    dataset_path = "../Dataset/liverun_outdoor/football1"
+    car_image_path = Golf_img_Path
     processor = ImageProcessor(dataset_path, car_image_path)
     processor.run()
