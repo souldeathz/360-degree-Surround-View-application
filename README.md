@@ -62,9 +62,11 @@ This is done by putting calibration patterns on the ground, taking the camera im
 
 See the illustration below:
 
-<img style="margin:0px auto;display:block" width=500 src="./Hardware_Setup/layout_1.jpg"/>
+<img style="margin:0px auto;display:block" width=800 src="./Hardware_Setup/layout_1.jpg"/>
 
 
 # Stitching and smoothing of the birdseye view image
+
+If everything goes well in the previous section, and after executing the script [Step4_merge.py](Development_Program/Step4_merge.py), you will notice the stitched bird's-eye view image:
 
 <img style="margin:0px auto;display:block" width=500 src="./Development_Program/out_merged_Images/final_merged_image.png"/>
