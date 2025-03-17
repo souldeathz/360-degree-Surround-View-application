@@ -1,83 +1,70 @@
-library installation
+This project is a simple, runnable, and reproducible demo to show how to develop a surround-view system in Python.
+The project is not very complex, but it does involve some careful computations. Now we explain the whole process step by step.
 
-```markdown
-pip install numpy
-pip install opencv-python
-pip install matplotlib
-pip install pyyaml
-```
+# Hardware and software
 
-Calibration Image
-```markdown
-# โหลดภาพตารางหมากรุก (เช่นไฟล์ชื่อ chessboard*.jpg)
-images = glob.glob('chessboard/chessboard*.jpg')
-print(images)
+The hardware used in the Golf car project includes:
 
-preview_images = []
+<img style="margin:0px auto;display:block" width=400 src="./Hardware_Setup/layout_0.jpg"/>
 
-for fname in images:
-    img = cv2.imread(fname)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    
-    # หามุมของตารางหมากรุก
-    ret, corners = cv2.findChessboardCorners(gray, chessboard_size, None)
-    
-    if ret:
-        # ปรับมุมให้ละเอียด
-        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-        corners2 = cv2.cornerSubPix(gray, corners, (11,11), (-1,-1), criteria)
-        
-        # เก็บค่า points
-        objpoints.append(objp)
-        imgpoints.append(corners2)
-        
-        # วาดและแสดงผลมุม
-        img_draw = cv2.drawChessboardCorners(img.copy(), chessboard_size, corners2, ret)
-        # cv2.imshow('Detected Corners', img_draw)
-        # cv2.waitKey(0)
+1. Four USB fisheye cameras, resolution: 1280x720.
+2. Jetson AGX Xavier developer kit: [Purchase This](https://developer.nvidia.com/buy-jetson)
+3. PCI-Ex USB 3.0 Framegrabber: [IOI U3X4-PCIE4XE304](https://www.ioi.com.cn/products/product_detail.php?pid=P0001&tid=&no=20190429002), a Quad Channel 4-port (1-port x 4) USB 3.0 to PCI Express x4 Gen 2 Host Card.
 
-        # รวมภาพต้นฉบับกับภาพที่มีมุมที่ detect
-        combined_img = cv2.hconcat([img, img_draw])
-        preview_images.append(combined_img)
+For more information, refer to the following documents:
+- [Jetson AGX Xavier Developer Kit User Guide](https://developer.download.nvidia.com/assets/embedded/secure/jetson/xavier/docs/jetson_agx_xavier_developer_kit_user_guide.pdf?__token__=exp=1742224205~hmac=55e0d3f75e785205cd7f8c9355744d07bfb86ba56890d5da73ee6e2462de2b1a&t=eyJscyI6ImdzZW8iLCJsc2QiOiJodHRwczovL3d3dy5nb29nbGUuY29tLyJ9)
+- [Jetson AGX Xavier Document](https://docs.nvidia.com/jetson/archives/r35.1/DeveloperGuide/text/SO/JetsonAgxXavierSeries.html)
 
-for preview in preview_images:
-    cv2.namedWindow('Calibration Preview', cv2.WINDOW_NORMAL)  # อนุญาตให้ปรับขนาดได้
-    cv2.resizeWindow('Calibration Preview', 800, 600)  # กำหนดขนาดเป็น 600x300 px
-    cv2.imshow('Calibration Preview', preview)
-    cv2.waitKey(0)
 
-if len(objpoints) > 0:
-    # Calibrate
-    ret, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(
-        objpoints, imgpoints, gray.shape[::-1], None, None
-    )
+The software: 
 
-```
+1. Ubuntu
+2. Python
+3. OpenCV
+4. PyQt5.
+`PyQt5` is used mainly for multi-threading.
 
-Undistort Image
+# Prepare work Step 1: Hardware Setup
 
-```markdown
-def undistort_image(img, camera_matrix, dist_coeffs):
-    h, w = img.shape[:2]
-    new_cam_mtx, roi = cv2.getOptimalNewCameraMatrix(camera_matrix, dist_coeffs, (w,h), 1, (w,h))
-    undistorted = cv2.undistort(img, camera_matrix, dist_coeffs, None, new_cam_mtx)
-    return undistorted
 
-# ตัวอย่างโหลดภาพและ undistort
-img_front = cv2.imread('front.jpg')
-img_rear = cv2.imread('rear.jpg')
-img_left = cv2.imread('left.jpg')
-img_right = cv2.imread('right.jpg')
+Camera Installation on Golf Car : The installation of cameras requires careful positioning to ensure that each side has as many common points as possible. This ensures that the merge operation will have a significant overlap, resulting in better alignment and accuracy.
 
-# สมมุติค่าที่ได้จาก calibration
-camera_matrix = np.array([[fx, 0, cx],
-                          [0, fy, cy],
-                          [0,  0,  1]])
 
-dist_coeffs = np.array([k1, k2, p1, p2, k3])
+| |  |   |   |
+|:-:|:-:|:-:|:-:|
+|front|back|left|right|
+|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_front.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_rear.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_left.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_right.jpg"/>|
 
-img_front = undistort_image(img_front, camera_matrix, dist_coeffs)
-img_rear = undistort_image(img_rear, camera_matrix, dist_coeffs)
-img_left = undistort_image(img_left, camera_matrix, dist_coeffs)
-img_right = undistort_image(img_right, camera_matrix, dist_coeffs)
-```
+# Prepare work Step 2: camera calibration
+
+
+There is a script [Step1_cal.py](Development_Program/Step1_cal.py) in this project to help
+ you calibrate the camera. I'm not going to discuss how to calibrate a camera here, as there are lots of resources on the web.
+ 
+Below are the images taken by the four cameras, in the order `front.png`、`back.png`、`left.png`、`right.png`, they are in the `images/` directory.
+
+| |  |   |   |
+|:-:|:-:|:-:|:-:|
+|front|back|left|right|
+|<img style="margin:0px auto;display:block" width=200 src="./Dataset/Img_distortion_Testing/Front.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Dataset/Img_distortion_Testing/Rear.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Dataset/Img_distortion_Testing/Left.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Dataset/Img_distortion_Testing/Right.jpg"/>|
+
+The parameters of these cameras are stored in the yaml files `calibration_data_front.yaml`、`calibration_data_rear.yaml`、`calibration_data_left.yaml`、`calibration_data_right.yaml`, these files can be found in the [yaml](Development_Program/yaml) directory.
+
+You can see there is a black-white calibration pattern on the ground, the size of the pattern is `140mx100cm`, the size of each black/white square is `20cmx20cm`
+
+
+# Setting projection parameters
+
+
+Now we compute the projection matrix for each camera. This matrix will transform the undistorted image into a bird's view of the ground. All four projection matrices must fit together to make sure the four projected images can be stitched together.
+
+This is done by putting calibration patterns on the ground, taking the camera images, manually choosing the feature points, and then computing the matrix.
+
+See the illustration below:
+
+<img style="margin:0px auto;display:block" width=500 src="./Hardware_Setup/layout_1.jpg"/>
+
+
+# Stitching and smoothing of the birdseye view image
+
+<img style="margin:0px auto;display:block" width=500 src="./Development_Program/out_merged_Images/final_merged_image.png"/>

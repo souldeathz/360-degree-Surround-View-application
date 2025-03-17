@@ -175,6 +175,7 @@ class ImageStitcher:
                 # ปรับค่าด้วยกำลังสอง
                 distToB **= 2
                 distToA **= 2
+                # คำนวณค่า G จากสัดส่วนระหว่าง distToB และ distToA
                 if distToA + distToB != 0:
                     G[y, x] = distToB / (distToA + distToB)
                 else:
