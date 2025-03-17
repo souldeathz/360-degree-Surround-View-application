@@ -33,7 +33,7 @@ Camera Installation on Golf Car : The installation of cameras requires careful p
 | |  |   |   |
 |:-:|:-:|:-:|:-:|
 |front|back|left|right|
-|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_front.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_rear.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_left.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_right.jpg"/>|
+|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_Front.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_rear.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_left.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_right.jpg"/>|
 
 # Prepare work Step 2: camera calibration
 
