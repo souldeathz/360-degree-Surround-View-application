@@ -41,7 +41,7 @@ Camera Installation on Golf Car : The installation of cameras requires careful p
 There is a script [Step1_cal.py](Development_Program/Step1_cal.py) in this project to help
  you calibrate the camera. I'm not going to discuss how to calibrate a camera here, as there are lots of resources on the web.
  
-Below are the images taken by the four cameras, in the order `front.png`、`back.png`、`left.png`、`right.png`, they are in the `images/` directory.
+Below are the images taken by the four cameras, in the order `front.png`、`back.png`、`left.png`、`right.png`, they are in the `Dataset/Img_distortion_Testing/` directory.
 
 | |  |   |   |
 |:-:|:-:|:-:|:-:|
