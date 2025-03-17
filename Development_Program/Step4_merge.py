@@ -27,6 +27,8 @@ from PIL import Image
 from param_settings import xl, xr, yt, yb
 from image_processing import LuminanceBalancer, ImageStitcher, ImageAdjuster
 
+Dataset_path = '../Dataset/'
+
 def load_image(path):
     """
     Load an image from a given file path.
@@ -49,10 +51,10 @@ def main():
     # Load images from different camera angles
     try:
         front = load_image('out_merged_Images/front_warped_image.png')
-        left = load_image('out_merged_Images/Left_warped_image.png')
+        left = load_image('out_merged_Images/left_warped_image.png')
         rear = load_image('out_merged_Images/Rear_warped_image.png')
-        right = load_image('out_merged_Images/Right_warped_image.png')
-        car = cv2.imread('Dataset/golf_car.png', cv2.IMREAD_UNCHANGED)  # Load car image with alpha channel
+        right = load_image('out_merged_Images/right_warped_image.png')
+        car = cv2.imread(f'{Dataset_path}golf_car.png', cv2.IMREAD_UNCHANGED)  # Load car image with alpha channel
 
         images = [front, left, rear, right]
 

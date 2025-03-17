@@ -30,6 +30,9 @@ import cv2
 import numpy as np
 import os
 
+# Defind dataset path 
+Dataset_path = '../Dataset/Img_distortion_Testing/'
+
 output_folder = 'out_merged_Images'  # Directory to save the warped images
 
 def load_calibration_parameters(yaml_filename):
@@ -124,9 +127,13 @@ if __name__ == "__main__":
         print(f"Loaded Distortion Coefficients for {test_folder}:\n", dist_coeffs)
 
         # Load the test image and apply undistortion
-        img_src = cv2.imread(f'Dataset/Img_distortion_Testing/{test_folder}.jpg')
+        img_src = cv2.imread(f'{Dataset_path}{test_folder}.jpg')
         if test_folder == 'rear':
             img_src = cv2.rotate(img_src, cv2.ROTATE_180)
+
+        if test_folder == 'right':
+            img_src = cv2.rotate(img_src, cv2.ROTATE_180)
+
 
         img_src_undistorted = cv2.undistort(img_src, camera_matrix, dist_coeffs)
 

@@ -33,11 +33,15 @@ import numpy as np
 import cv2
 import glob
 
+
 def get_intrinsic_matrix(fx, fy, cx, cy):
     """Returns the intrinsic camera matrix."""
     return np.array([[fx, 0, cx],
                      [0, fy, cy],
                      [0,  0,  1]])
+
+# Defind dataset path 
+Dataset_path = '../Dataset/Img_distortion_Testing/'
 
 # Define chessboard size and square size
 chessboard_size = (6, 4)  # Number of inner corners (width, height)
@@ -108,7 +112,7 @@ for test_folder in test_folders:
     print(f"\nProcessing test folder: {test_folder}")
 
     # Load test image for undistortion
-    img_test = cv2.imread(f'Dataset/Img_distortion_Testing/{test_folder}.jpg')
+    img_test = cv2.imread(f'{Dataset_path}{test_folder}.jpg')
 
     if img_test is not None:
         # Undistort the test image

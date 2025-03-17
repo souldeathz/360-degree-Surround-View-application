@@ -175,7 +175,10 @@ class ImageStitcher:
                 # ปรับค่าด้วยกำลังสอง
                 distToB **= 2
                 distToA **= 2
-                G[y, x] = distToB / (distToA + distToB)
+                if distToA + distToB != 0:
+                    G[y, x] = distToB / (distToA + distToB)
+                else:
+                    G[y, x] = 0
         return G, overlapMask
 
     @staticmethod
