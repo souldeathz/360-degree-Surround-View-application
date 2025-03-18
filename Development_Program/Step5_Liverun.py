@@ -2,11 +2,12 @@ import cv2
 import os
 import numpy as np
 import time
+from param_settings import Golf_img_Path
 
 # Define the path to the dataset
 # dataset_path = "Dataset/liverun_Round1"
 dataset_path = "../Dataset/liverun_outdoor/football1"
-car = cv2.imread('../Dataset/golf_car.png', cv2.IMREAD_UNCHANGED)  # Load car image with alpha channel
+car = cv2.imread(Golf_img_Path, cv2.IMREAD_UNCHANGED)  # Load car image with alpha channel
 folders = ["front", "left", "rear", "right"]
 
 display_width = 800

@@ -15,6 +15,7 @@ For more information, refer to the following documents:
 - [Jetson AGX Xavier Developer Kit User Guide](https://developer.download.nvidia.com/assets/embedded/secure/jetson/xavier/docs/jetson_agx_xavier_developer_kit_user_guide.pdf?__token__=exp=1742224205~hmac=55e0d3f75e785205cd7f8c9355744d07bfb86ba56890d5da73ee6e2462de2b1a&t=eyJscyI6ImdzZW8iLCJsc2QiOiJodHRwczovL3d3dy5nb29nbGUuY29tLyJ9)
 - [Jetson AGX Xavier Document](https://docs.nvidia.com/jetson/archives/r35.1/DeveloperGuide/text/SO/JetsonAgxXavierSeries.html)
 
+📌 **Note:** During the **Development** phase, a **regular notebook** will be used instead of Jetson AGX Xavier and PCI-Ex USB 3.0 Framegrabber.
 
 The software: 
 
@@ -62,7 +63,24 @@ This is done by putting calibration patterns on the ground, taking the camera im
 
 See the illustration below:
 
-<img style="margin:0px auto;display:block" width=800 src="./Hardware_Setup/layout_1.jpg"/>
+<img style="margin:0px auto;display:block" width=800 height=800 src="./Hardware_Setup/paramsettings.png"/>
+
+Firstly you put four calibration boards at the four corners around the car (the blue squares). There are no particular restrictions on how large the board must be, only make sure you can see it clearly in the image.
+
+OF course, each board must be seen by the two adjacent cameras.
+
+Now we need to set a few parameters: (in `cm` units)
+
++ `Inner TL,TR,BL,BR`：distance between the inner edges of the left/right calibration boards and the car， the distance between the inner edges of the front/back calibration boards and the car。(gap between calibration pattern and car)
++ `Shif Boundary`：How far you will want to look at out of the boards. The bigger these values, the larger the area the birdview image will cover.
++ `totalWidth`, `totalHeight`：Size of the area that the birdview image covers. In this project, the calibration pattern is of width `1040cm` and height `1191cm`, hence the bird view image will cover an area of size . For simplicity,
+we let each pixel correspond to 1cm, so the final bird-view image also has a resolution
+
++ The four corners of the rectangular area where the vehicle is located (marked with red dots in the image) are denoted by the coordinates (xl, yt), (xr, yt), (xl, yb), and (xr, yb), where "l" stands for left, "r" stands for right, "t" stands for top, and "b" stands for bottom. The camera cannot see this rectangular area, and we will use an icon of the vehicle to cover it.
+
+Note that the extension lines of the four sides of the vehicle area divide the entire bird's-eye view into eight parts: front-left (FL), front-center (F), front-right (FR), left (L), right (R), back-left (BL), back-center (B), and back-right (BR). Among them, FL (area I), FR (area II), BL (area III), and BR (area IV) are the overlapping areas of adjacent camera views, and they are the parts that we need to focus on for fusion processing. The areas F, R, L, and R belong to the individual views of each camera and do not require fusion processing.
+
+The above parameters are saved in [param_settings.py](./Development_Program/param_settings.py) 
 
 
 # Stitching and smoothing of the birdseye view image

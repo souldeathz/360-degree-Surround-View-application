@@ -1,5 +1,5 @@
-import os
 import cv2
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
@@ -12,17 +12,15 @@ camera_names = ["front", "back", "left", "right"]
 shift_w = 300
 shift_h = 300
 
-# size of the gap between the calibration pattern and the car
-# in horizontal and vertical directions
+# Size of the gap between the calibration pattern and the car
 inn_shift_w = 45
 inn_shift_h = 45
 
-# total width/height of the stitched image
+# Total width/height of the stitched image
 total_w = 1040
 total_h = 1191
 
-# four corners of the rectangular region occupied by the car
-# top-left (x_left, y_top), bottom-right (x_right, y_bottom)
+# Four corners of the rectangular region occupied by the car
 xl = 465
 xr = 575
 yt = 465
@@ -36,7 +34,6 @@ project_shapes = {
     "right": (total_h, xl)
 }
 
-
 # --------------------------------------------------------------------
 # Correct outer boundary (shrink inward from total image size)
 outer_xl = shift_w
@@ -49,20 +46,26 @@ inner_xl = xl - inn_shift_w
 inner_xr = xr + inn_shift_w
 inner_yt = yt - inn_shift_h
 inner_yb = yb + inn_shift_h
-# Define coordinate points to plot
-points = {
-    "Car TL": (xl, yt), "Car TR": (xr, yt),
-    "Car BL": (xl, yb), "Car BR": (xr, yb),
-    "Outer TL": (outer_xl, outer_yt), "Outer TR": (outer_xr, outer_yt),
-    "Outer BL": (outer_xl, outer_yb), "Outer BR": (outer_xr, outer_yb),
-    "Inner TL": (inner_xl, inner_yt), "Inner TR": (inner_xr, inner_yt),
-    "Inner BL": (inner_xl, inner_yb), "Inner BR": (inner_xr, inner_yb)
-}
 
-# Print coordinates to console
-print("\n📌 Coordinate Points:")
-for label, (x, y) in points.items():
-    print(f"{label}: ({x}, {y})")
+# Chessboard configurations
+chessboard_config = {
+    "front": {
+        "inner_dst_pts": np.array([[450, 310], [590, 310], [450, 410], [590, 410]], dtype=np.float32),
+        "rows": 5, "cols": 7, "chessboard_width": 140, "chessboard_height": 100
+    },
+    "left": {
+        "inner_dst_pts": np.array([[310, 524], [410, 524], [310, 664], [410, 664]], dtype=np.float32),
+        "rows": 7, "cols": 5, "chessboard_width": 100, "chessboard_height": 140
+    },
+    "right": {
+        "inner_dst_pts": np.array([[630, 524], [730, 524], [630, 664], [730, 664]], dtype=np.float32),
+        "rows": 7, "cols": 5, "chessboard_width": 100, "chessboard_height": 140
+    },
+    "rear": {
+        "inner_dst_pts": np.array([[450, 781], [590, 781], [450, 891], [590, 891]], dtype=np.float32),
+        "rows": 5, "cols": 7, "chessboard_width": 140, "chessboard_height": 100
+    }
+}
 
 # --------------------------------------------------------------------
 # Create the figure
@@ -73,7 +76,7 @@ ax.set_xlim(0, total_w)
 ax.set_ylim(total_h, 0)  # Inverted to match top-down view
 ax.set_xticks([])
 ax.set_yticks([])
-ax.set_title("2D Bird’s-Eye View with Coordinate Points")
+ax.set_title("2D Bird’s-Eye View with Chessboard Overlay")
 
 # Draw outer boundary (dotted black line)
 outer_rect = patches.Rectangle((outer_xl, outer_yt), outer_xr - outer_xl, outer_yb - outer_yt, 
@@ -100,13 +103,45 @@ ax.add_patch(back_area)
 ax.add_patch(left_area)
 ax.add_patch(right_area)
 
+# Draw Chessboards
+for key, params in chessboard_config.items():
+    dst_pts = params["inner_dst_pts"]
+    x_min, y_min = dst_pts[0]  # Top-left corner
+    x_max, y_max = dst_pts[3]  # Bottom-right corner
+    
+    chessboard_rect = patches.Rectangle(
+        (x_min, y_min),
+        x_max - x_min,
+        y_max - y_min,
+        linewidth=2,
+        edgecolor='black',
+        facecolor='black',  # Chessboard in black
+        alpha=0.6,
+        label=f"{key.capitalize()} Chessboard"
+    )
+    ax.add_patch(chessboard_rect)
+
 # Plot coordinate points
-for label, (x, y) in points.items():
+for label, (x, y) in {
+    "Car TL": (xl, yt), "Car TR": (xr, yt),
+    "Car BL": (xl, yb), "Car BR": (xr, yb),
+    "Outer TL": (outer_xl, outer_yt), "Outer TR": (outer_xr, outer_yt),
+    "Outer BL": (outer_xl, outer_yb), "Outer BR": (outer_xr, outer_yb),
+    "Inner TL": (inner_xl, inner_yt), "Inner TR": (inner_xr, inner_yt),
+    "Inner BL": (inner_xl, inner_yb), "Inner BR": (inner_xr, inner_yb)
+}.items():
     ax.scatter(x, y, color="black", marker="o", s=40)  # Plot points
     ax.text(x + 10, y - 10, f"{label}\n({x}, {y})", fontsize=8, color="black")  # Add labels near points
 
 # Add legend
 ax.legend(loc="upper right")
+
+# Add an arrow from (0, shift_h) to (shift_w, shift_h)
+ax.annotate("", xy=(shift_w, shift_h), xytext=(0, shift_h),
+            arrowprops=dict(arrowstyle="->", color="blue", linewidth=2))
+
+# Label the arrow
+ax.text(shift_w / 2, shift_h - 10, "Shift Boundary", fontsize=10, color="blue", ha="center")
 
 # Show plot
 plt.show()
