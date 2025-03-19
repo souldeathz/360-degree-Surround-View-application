@@ -6,7 +6,7 @@ from param_settings import Golf_img_Path
 
 # Define the path to the dataset
 # dataset_path = "Dataset/liverun_Round1"
-dataset_path = "../Dataset/liverun_outdoor/football1"
+dataset_path = "../Dataset/liverun_outdoor/football"
 car = cv2.imread(Golf_img_Path, cv2.IMREAD_UNCHANGED)  # Load car image with alpha channel
 folders = ["front", "left", "rear", "right"]
 
@@ -114,7 +114,8 @@ def process_image(image, cameraID):
         processed_image = img_src  # Add actual processing for rear camera
 
     elif cameraID == "right":
-        processed_image = image  # Add actual processing for right camera
+        img_src = cv2.rotate(image, cv2.ROTATE_180)
+        processed_image = img_src  # Add actual processing for right camera
 
     else:
         # Default processing if cameraID is not recognized

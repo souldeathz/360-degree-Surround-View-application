@@ -71,7 +71,8 @@ class ImageProcessor:
             img_src = cv2.rotate(image, cv2.ROTATE_180)
             processed_image = img_src
         elif cameraID == "right":
-            processed_image = image
+            img_src = cv2.rotate(image, cv2.ROTATE_180)
+            processed_image = img_src 
         else:
             processed_image = image
         
@@ -126,7 +127,7 @@ class ImageProcessor:
                     index = 0
 
 if __name__ == '__main__':
-    dataset_path = "../Dataset/liverun_outdoor/football1"
+    dataset_path = "../Dataset/liverun_outdoor/football"
     car_image_path = Golf_img_Path
     processor = ImageProcessor(dataset_path, car_image_path)
     processor.run()
