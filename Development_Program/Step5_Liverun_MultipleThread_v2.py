@@ -80,9 +80,9 @@ class ImageProcessor:
                 end_time_merge = time.time()
                 end_time_total = time.time()
                 
-                print(f"Image merging time: {end_time_merge - start_time_merge:.4f} seconds")
-                print(f"Total threading execution time: {end_time_threading - start_time_threading:.4f} seconds "
-                      f"(Includes: Grab frames → Undistort & Warp frames → Store processed images)")
+                # print(f"Image merging time: {end_time_merge - start_time_merge:.4f} seconds")
+                # print(f"Total threading execution time: {end_time_threading - start_time_threading:.4f} seconds "
+                #       f"(Includes: Grab frames → Undistort & Warp frames → Store processed images)")
                 print(f"Total processing time: {end_time_total - start_time_total:.4f} seconds")
                 
                 resized_width = self.display_width // 2
@@ -91,9 +91,12 @@ class ImageProcessor:
                 top_row = np.hstack((resized_images[0], resized_images[1]))
                 bottom_row = np.hstack((resized_images[2], resized_images[3]))
                 merged_Display_image = np.vstack((top_row, bottom_row))
-                
+                new_width = 800
+                new_height = 900
+                resized_final_image = cv2.resize(final_merged_image, (new_width, new_height))
+
                 cv2.imshow("Merged Image", merged_Display_image)
-                cv2.imshow("Final Merged Image", final_merged_image)
+                cv2.imshow("Final Merged Image", resized_final_image)
                 cv2.waitKey(1)
         
         for cap in self.caps.values():
