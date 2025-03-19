@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 from param_settings import xl, xr, yt, yb
 import threading
-
+import concurrent.futures
 
 class LuminanceBalancer:
     """Adjusts luminance balance between images"""
@@ -124,7 +124,6 @@ class LuminanceBalancer:
         R = LuminanceBalancer.adjust_luminance(R, K / m3)
         return cv2.merge((B, G, R))
 
-
 class ImageStitcher:
     """Performs white balance adjustment using the average intensity of each channel"""
 
@@ -182,10 +181,44 @@ class ImageStitcher:
                     G[y, x] = 0
         return G, overlapMask
 
+
+    def get_weight_mask_matrix_liverun(imA, imB, dist_threshold=5):
+        overlapMask = ImageStitcher.get_overlap_region_mask(imA, imB)
+        overlapMaskInv = cv2.bitwise_not(overlapMask)
+        
+        # Difference masks
+        imA_diff = cv2.bitwise_and(imA, imA, mask=overlapMaskInv)
+        imB_diff = cv2.bitwise_and(imB, imB, mask=overlapMaskInv)
+
+        # Binary masks for distance transform
+        polyA_mask = ImageStitcher.get_mask(imA_diff)
+        polyB_mask = ImageStitcher.get_mask(imB_diff)
+
+        # Compute Distance Transform
+        distToA = cv2.distanceTransform(255 - polyA_mask, cv2.DIST_L2, 5)  # DIST_L2 = Euclidean distance
+        distToB = cv2.distanceTransform(255 - polyB_mask, cv2.DIST_L2, 5)
+
+        # Square the distances
+        distToA **= 2
+        distToB **= 2
+
+        # Initialize weight matrix G
+        G = ImageStitcher.get_mask(imA).astype(np.float32) / 255.0
+
+        # Avoid division by zero
+        denominator = distToA + distToB
+        mask = denominator > 0  # จุดที่มีค่า denominator ไม่เป็น 0
+        G[mask] = distToB[mask] / denominator[mask]
+
+        return G, overlapMask
+
+
+
     @staticmethod
     def merge(imA, imB, G):
         G_expanded = np.expand_dims(G, axis=-1)
         return (imA * G_expanded + imB * (1 - G_expanded)).astype(np.uint8)
+
 
     # ฟังก์ชันตัดส่วนภาพ (crop functions)
     @staticmethod
@@ -290,10 +323,47 @@ class ImageStitcher:
         threading.Thread(target=Image.fromarray(final_merged_image).save, args=("out_Section_Images/final_merged_image.png",)).start()
         return final_merged_image
 
+    def get_weights_and_masks_liverun(images):
+        """
+        รวมภาพในแต่ละส่วนและบันทึกไฟล์ผลลัพธ์
+        คืนค่า final merged image
+        """
+        front, left, back, right = images
+
+
+        # รวมภาพซ้ายบน
+        G0, M0 = ImageStitcher.get_weight_mask_matrix_liverun(ImageStitcher.FI(front), ImageStitcher.LI(left))
+        merged_image_LT = ImageStitcher.merge(ImageStitcher.FI(front), ImageStitcher.LI(left), G0)
+
+        # รวมภาพขวาบน
+        G1, M1 = ImageStitcher.get_weight_mask_matrix_liverun(ImageStitcher.FII(front), ImageStitcher.RII(right))
+        merged_image_RT = ImageStitcher.merge(ImageStitcher.FII(front), ImageStitcher.RII(right), G1)
+
+        # รวมภาพซ้ายล่าง
+        G2, M2 = ImageStitcher.get_weight_mask_matrix_liverun(ImageStitcher.BIII(back), ImageStitcher.LIII(left))
+        merged_image_LB = ImageStitcher.merge(ImageStitcher.BIII(back), ImageStitcher.LIII(left), G2)
+
+        # รวมภาพขวาล่าง
+        G3, M3 = ImageStitcher.get_weight_mask_matrix_liverun(ImageStitcher.BIV(back), ImageStitcher.RIV(right))
+        merged_image_RB = ImageStitcher.merge(ImageStitcher.BIV(back), ImageStitcher.RIV(right), G3)
+
+        # บรรจุภาพที่ไม่ได้ merge (FM, BM, LM, RM)
+        final_merged_image = np.zeros_like(front)
+        np.copyto(final_merged_image[:yt, :xl], merged_image_LT)
+        np.copyto(final_merged_image[:yt, xr:], merged_image_RT)
+        np.copyto(final_merged_image[yb:, :xl], merged_image_LB)
+        np.copyto(final_merged_image[yb:, xr:], merged_image_RB)
+        np.copyto(final_merged_image[:yt, xl:xr], ImageStitcher.FM(front))
+        np.copyto(final_merged_image[yb:, xl:xr], ImageStitcher.BM(back))
+        np.copyto(final_merged_image[yt:yb, :xl], ImageStitcher.LM(left))
+        np.copyto(final_merged_image[yt:yb, xr:], ImageStitcher.RM(right))
+        return final_merged_image
 
 class ImageAdjuster:
     """Handles image blending and overlay operations."""
-
+    """
+    A utility class for merging images and applying perspective transformations.
+    """
     @staticmethod
     def merge_images(images, mode='hard_overlay', alpha=0.25):
         """
@@ -359,4 +429,68 @@ class ImageAdjuster:
             background[:, :, c] = (alpha_channel * warped_overlay[:, :, c] +
                                    (1 - alpha_channel) * background[:, :, c])
         
+        return background
+
+    """
+    A utility class for merging images and applying perspective transformations.
+    """
+
+    @staticmethod
+    def merge_images(images, mode='hard_overlay', alpha=0.25):
+        """
+        Merge a list of images using the specified mode.
+
+        Parameters:
+        images (list of numpy.ndarray): List of images to be merged. All images must have the same dimensions.
+        mode (str): Mode of merging images. Options are 'hard_overlay' and 'alpha_blend'. Default is 'hard_overlay'.
+            - 'hard_overlay': Overlays non-zero pixels from each image onto the merged image.
+            - 'alpha_blend': Blends images using alpha blending with the specified alpha value.
+        alpha (float): Alpha value for blending in 'alpha_blend' mode. Default is 0.25.
+
+        Returns:
+        numpy.ndarray: The merged image.
+        """
+        height, width, _ = images[0].shape
+        merged_image = np.zeros((height, width, 3), dtype=np.uint8)
+
+        if mode == 'hard_overlay':
+            for img in images:
+                mask = (img != 0).any(axis=2)
+                merged_image[mask] = img[mask]
+
+        elif mode == 'alpha_blend':
+            total_weight = alpha * len(images)
+            for img in images:
+                merged_image = cv2.addWeighted(merged_image, 1, img, alpha, 0)
+            merged_image = cv2.convertScaleAbs(merged_image * (1 / total_weight))
+
+        return merged_image
+
+    @staticmethod
+    def overlay_image_perspective(background, overlay, dst_points):
+        """
+        Overlays an image onto a background image using a perspective transformation.
+
+        Args:
+            background (numpy.ndarray): The background image onto which the overlay will be applied.
+            overlay (numpy.ndarray): The overlay image with an alpha channel.
+            dst_points (numpy.ndarray): A 4x2 array of destination points for the perspective transformation.
+
+        Returns:
+            numpy.ndarray: The background image with the overlay applied.
+        """
+        src_points = np.float32([
+            [0, 0],
+            [overlay.shape[1] - 1, 0],
+            [0, overlay.shape[0] - 1],
+            [overlay.shape[1] - 1, overlay.shape[0] - 1]
+        ])
+
+        matrix = cv2.getPerspectiveTransform(src_points, dst_points)
+        warped_overlay = cv2.warpPerspective(overlay, matrix, (background.shape[1], background.shape[0]))
+
+        alpha_channel = warped_overlay[:, :, 3] / 255.0
+        for c in range(0, 3):
+            background[:, :, c] = alpha_channel * warped_overlay[:, :, c] + (1 - alpha_channel) * background[:, :, c]
+
         return background

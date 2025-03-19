@@ -4,195 +4,149 @@ import numpy as np
 import time
 import threading
 from param_settings import Golf_img_Path
+import concurrent.futures
 
-# Define the path to the dataset
-dataset_path = "../Dataset/liverun_outdoor/football"
-car = cv2.imread(Golf_img_Path, cv2.IMREAD_UNCHANGED)  # Load car image with alpha channel
-folders = ["front", "left", "rear", "right"]
-
-display_width = 800
-display_height = 600
-
-Map_width = 1040 
-Map_height = 1191
-
-# Define destination points for perspective transformation
-Car_dst_points = np.float32([
-    [465, 465],  # Point 1
-    [575, 465],  # Point 2
-    [465, 685],  # Point 3
-    [575, 685]   # Point 4
-])
-
-def merge_images(images, mode='hard_overlay', alpha=0.25):
-    """
-    Merge a list of images using the specified mode.
-    Parameters:
-    images (list of numpy.ndarray): List of images to be merged. All images must have the same dimensions.
-    mode (str): Mode of merging images. Options are 'hard_overlay' and 'alpha_blend'. Default is 'hard_overlay'.
-        - 'hard_overlay': Overlays non-zero pixels from each image onto the merged image.
-        - 'alpha_blend': Blends images using alpha blending with the specified alpha value.
-    alpha (float): Alpha value for blending in 'alpha_blend' mode. Default is 0.25.
-    Returns:
-    numpy.ndarray: The merged image.
-    Note:
-    - In 'hard_overlay' mode, non-zero pixels from each image will replace the corresponding pixels in the merged image.
-    - In 'alpha_blend' mode, images are blended together with the specified alpha value.
-    """
-    height, width, _ = images[0].shape
-    merged_image = np.zeros((height, width, 3), dtype=np.uint8)
+class VideoProcessor:
+    def __init__(self, video_paths, car_image_path, display_width=800, display_height=600, map_width=1040, map_height=1191):
+        self.video_paths = video_paths
+        self.car = cv2.imread(car_image_path, cv2.IMREAD_UNCHANGED)
+        self.caps = {key: cv2.VideoCapture(path) for key, path in video_paths.items()}
+        self.display_width = display_width
+        self.display_height = display_height
+        self.map_width = map_width
+        self.map_height = map_height
+        self.car_dst_points = np.float32([
+            [465, 465],
+            [575, 465],
+            [465, 685],
+            [575, 685]
+        ])
+        # Load calibration data once**
+        self.calibration_data = {}
+        for cam_id in ["front", "left", "rear", "right"]:
+            yaml_filename = os.path.join('yaml', f'calibration_data_{cam_id}.yaml')
+            fs = cv2.FileStorage(yaml_filename, cv2.FILE_STORAGE_READ)
+            self.calibration_data[cam_id] = {
+                "camera_matrix": fs.getNode("camera_matrix").mat(),
+                "dist_coeffs": fs.getNode("dist_coeffs").mat(),
+                "homography": fs.getNode("homography").mat()
+            }
+            fs.release()
     
-    if mode == 'hard_overlay':
-        for img in images:
-            mask = (img != 0).any(axis=2)
-            merged_image[mask] = img[mask]
-    
-    elif mode == 'alpha_blend':
-        total_weight = alpha * len(images)
-        for img in images:
-            merged_image = cv2.addWeighted(merged_image, 1, img, alpha, 0)
-        merged_image = cv2.convertScaleAbs(merged_image * (1/total_weight))
-    
-    return merged_image
+    def process_image(self, image, cameraID):
+        start_time = time.time()
+        
+        # Retrieve preloaded calibration data
+        calib = self.calibration_data[cameraID]
+        camera_matrix = calib["camera_matrix"]
+        dist_coeffs = calib["dist_coeffs"]
+        H = calib["homography"]
 
-def overlay_image_perspective(background, overlay, dst_points):
-    """
-    Overlays an image onto a background image using a perspective transformation.
-    Args:
-        background (numpy.ndarray): The background image onto which the overlay will be applied.
-        overlay (numpy.ndarray): The overlay image with an alpha channel.
-        dst_points (numpy.ndarray): A 4x2 array of destination points for the perspective transformation.
-    Returns:
-        numpy.ndarray: The background image with the overlay applied.
-    Note:
-        The overlay image must have an alpha channel (4th channel) for transparency.
-        The dst_points should be in the order: top-left, top-right, bottom-left, bottom-right.
-    """
-    src_points = np.float32([
-        [0, 0],
-        [overlay.shape[1] - 1, 0],
-        [0, overlay.shape[0] - 1],
-        [overlay.shape[1] - 1, overlay.shape[0] - 1]
-    ])
-    
-    matrix = cv2.getPerspectiveTransform(src_points, dst_points)
-    warped_overlay = cv2.warpPerspective(overlay, matrix, (background.shape[1], background.shape[0]))
-    
-    alpha_channel = warped_overlay[:, :, 3] / 255.0
-    for c in range(0, 3):
-        background[:, :, c] = alpha_channel * warped_overlay[:, :, c] + (1 - alpha_channel) * background[:, :, c]
-    
-    return background
+        # **Optimization 2: Reduce Unnecessary Copies**
+        if cameraID in ["rear", "right"]:
+            image = cv2.rotate(image, cv2.ROTATE_180)
 
-def process_image(image, cameraID):
-    """
-    Process the image based on the camera ID.
-    Args:
-        image (numpy.ndarray): The input image to be processed.
-        cameraID (str): The ID of the camera (e.g., 'front', 'left', 'rear', 'right').
-    Returns:
-        tuple: A tuple containing the processed image and the warped RGBA image.
-    Note:
-        The function reads calibration data from a YAML file, undistorts the image, and applies a perspective warp.
-    """
-    yaml_filename = os.path.join('yaml', f'calibration_data_{cameraID}.yaml')
-    fs = cv2.FileStorage(yaml_filename, cv2.FILE_STORAGE_READ)
-    camera_matrix = fs.getNode("camera_matrix").mat()
-    dist_coeffs = fs.getNode("dist_coeffs").mat()
-    resolution = fs.getNode("resolution").mat()
-    H = fs.getNode("homography").mat()
+        img_src_undistorted = cv2.undistort(image, camera_matrix, dist_coeffs)
+
+        warped = cv2.warpPerspective(img_src_undistorted, H, (self.map_width, self.map_height))
+        
+        end_time = time.time()
+        # print(f"Processing time for {cameraID}: {end_time - start_time:.4f} seconds")
+        return img_src_undistorted, warped  # Returning undistorted & warped image directly
     
-    # Process the image based on the camera ID
-    if cameraID == "front":
-        processed_image = image  # Add actual processing for front camera
+    def grab_image(self, cam_id, cap, images, warped_rgba_, index):
+        start_time = time.time()
+        ret, frame = cap.read()
+        if not ret:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            return
+        processed_img, warped_rgba = self.process_image(frame, cam_id)
+        images[index] = processed_img
+        warped_rgba_[index] = warped_rgba
+        end_time = time.time()
+        # print(f"Frame grab time for {cam_id}: {end_time - start_time:.4f} seconds")
 
-    elif cameraID == "left":
-        processed_image = image  # Add actual processing for left camera
-
-    elif cameraID == "rear":
-        img_src = cv2.rotate(image, cv2.ROTATE_180)
-        processed_image = img_src  # Add actual processing for rear camera
-
-    elif cameraID == "right":
-        img_src = cv2.rotate(image, cv2.ROTATE_180)
-        processed_image = img_src  # Add actual processing for right camera
-
-    else:
-        # Default processing if cameraID is not recognized
-        processed_image = image
-    
-    # Undistort the image using the camera matrix and distortion coefficients
-    img_src_undistorted = cv2.undistort(processed_image, camera_matrix, dist_coeffs)
-    
-    # Apply perspective warp using the homography matrix
-    warped = cv2.warpPerspective(img_src_undistorted, H, (Map_width, Map_height))
-    
-    # Convert the warped image to RGBA format
-    warped_rgba = cv2.cvtColor(warped, cv2.COLOR_BGR2BGRA)
-    warped_rgba[np.all(warped_rgba[:, :, :3] == [0, 0, 0], axis=-1)] = [0, 0, 0, 0]
-    
-    # Convert the warped RGBA image back to RGB format
-    warped_rgb = cv2.cvtColor(warped_rgba, cv2.COLOR_BGRA2BGR)
-    
-    return processed_image, warped_rgb
-
-# Loop through each folder and display the images
-index = 0
-while True:
-    def grab_image_from_folder(folder, filename, images, warped_rgba_, index):
-
-        img_path = os.path.join(dataset_path, folder, filename)
-        img = cv2.imread(img_path)
-        if img is not None:
-            processed_img, warped_rgba = process_image(img, folder)
-            images[index] = processed_img
-            warped_rgba_[index] = warped_rgba
-
-    while True:
-        start_time = time.time()  # Start time for processing        
-        filename = os.listdir(os.path.join(dataset_path, folders[0]))[index]
-        if filename.endswith(('.png', '.jpg', '.jpeg')):
-            images = [None] * len(folders)
-            warped_rgba_ = [None] * len(folders)
+    def run(self):
+        while True:
+            start_time_total = time.time()
+            images = [None] * len(self.caps)
+            warped_rgba_ = [None] * len(self.caps)
             threads = []
-            for i, folder in enumerate(folders):
-                thread = threading.Thread(target=grab_image_from_folder, args=(folder, filename, images, warped_rgba_, i))
+            start_time_threading = time.time()
+            
+            for i, (cam_id, cap) in enumerate(self.caps.items()):
+                thread = threading.Thread(target=self.grab_image, args=(cam_id, cap, images, warped_rgba_, i))
                 threads.append(thread)
                 thread.start()
-
+            
             for thread in threads:
                 thread.join()
+            end_time_threading = time.time()
+            # print(f"Total threading execution time: {end_time_threading - start_time_threading:.4f} seconds "
+            #     f"(Includes: Grab frames from video sources → Undistort & Warp frames → Store processed images)")           
+            if all(img is not None for img in images):
+                start_time_merge = time.time()
+                for i in range(len(warped_rgba_)):
+                    if warped_rgba_[i].shape[:2] != (self.map_height, self.map_width):
+                        warped_rgba_[i] = cv2.resize(warped_rgba_[i], (self.map_width, self.map_height))
+                
+
+                # (Normal Fast) Option 1: Use numpy to stack images and find the last non-zero pixel
+                # merged_car_image = np.zeros((self.map_height, self.map_width, 3), dtype=np.uint8)
+                # for img in warped_rgba_:
+                #     mask = (img != 0).any(axis=2)
+                #     merged_car_image[mask] = img[mask]
+
+                # (Very Fast) Option 2: Use numpy to stack images and find the last non-zero pixel
+                # merged_car_image = np.zeros((self.map_height, self.map_width, 3), dtype=np.uint8)
+                # # Stack images along a new axis
+                # warped_stack = np.stack(warped_rgba_, axis=0)  # Shape: (4, H, W, 3)
+                # # Create a mask for non-zero pixels in each image
+                # nonzero_mask = np.any(warped_stack != 0, axis=-1)  # Shape: (4, H, W)
+                # # Find the last nonzero pixel index for each position
+                # last_nonzero_idx = np.argmax(nonzero_mask[::-1], axis=0)  # Reverse order to get last occurrence
+                # # Reverse index to match original order
+                # last_nonzero_idx = nonzero_mask.shape[0] - 1 - last_nonzero_idx
+                # # Use advanced indexing to select pixels from the last nonzero image
+                # merged_car_image = warped_stack[last_nonzero_idx, np.arange(self.map_height)[:, None], np.arange(self.map_width)]
+
+                # (Very very very Fast) Option 3: Use numpy to stack images and find the last non-zero pixel
+                merged_car_image = np.zeros((self.map_height, self.map_width, 3), dtype=np.uint8)
+                # Stack images along a new axis (shape: (4, H, W, 3))
+                warped_stack = np.stack(warped_rgba_, axis=0)
+                # Create a mask for non-zero pixels
+                mask = np.any(warped_stack != 0, axis=0)
+                # Apply np.max() for selecting the highest intensity pixel
+                merged_car_image[mask] = np.max(warped_stack, axis=0)[mask]
+
+
+                end_time_merge = time.time()
+                # print(f"Image merging time: {end_time_merge - start_time_merge:.4f} seconds")
+                
+                end_time_total = time.time()
+                print(f"Total processing time: {end_time_total - start_time_total:.4f} seconds")
+                
+                resized_width, resized_height = self.display_width // 2, self.display_height // 2
+                resized_images = [cv2.resize(img, (resized_width, resized_height)) for img in images]
+                top_row = np.hstack((resized_images[0], resized_images[1]))
+                bottom_row = np.hstack((resized_images[2], resized_images[3]))
+                merged_Display_image = np.vstack((top_row, bottom_row))
+                
+                cv2.imshow("Merged 4 POV Images", merged_Display_image)
+                cv2.imshow("Merged Car Image", merged_car_image)
+                cv2.waitKey(1)
         
-        if len(images) == 4:
+        for cap in self.caps.values():
+            cap.release()
+        cv2.destroyAllWindows()
 
-            # Merge images using the provided merge_images function
-            mode = 'hard_overlay'
-            merged_car_image_ = merge_images(warped_rgba_, mode=mode, alpha=0.25)
-
-            # Overlay car image at specified coordinates
-            merged_car_image = overlay_image_perspective(merged_car_image_, car, Car_dst_points)
-
-            end_time = time.time()  # End time for processing
-            process_time = end_time - start_time
-            print(f"Processed time in {process_time:.2f} seconds")
-
-            # Display Part
-            # Merge the images into one
-            # Resize images to fit the specified display size
-
-            resized_width = display_width // 2
-            resized_height = display_height // 2
-            resized_images = [cv2.resize(img, (resized_width, resized_height)) for img in images]
-            top_row = np.hstack((resized_images[0], resized_images[1]))
-            bottom_row = np.hstack((resized_images[2], resized_images[3]))
-            merged_Display_image = np.vstack((top_row, bottom_row))
-            
-            # Display the merged image
-            cv2.imshow("Merged Image", merged_Display_image)
-            # Display the final merged image with the car overlay
-            cv2.imshow("Merged Image with Car Overlay", merged_car_image)
-            cv2.waitKey(10)  # Wait for 0.5 seconds
-    
-        index += 1
-        if index >= len(os.listdir(os.path.join(dataset_path, folders[0]))):
-            index = 0
+if __name__ == '__main__':
+    video_paths = {
+        "front": "../Dataset/liverun_outdoor/front.mp4",
+        "left": "../Dataset/liverun_outdoor/left.mp4",
+        "rear": "../Dataset/liverun_outdoor/rear.mp4",
+        "right": "../Dataset/liverun_outdoor/right.mp4",
+    }
+    car_image_path = Golf_img_Path
+    processor = VideoProcessor(video_paths, car_image_path)
+    processor.run()
