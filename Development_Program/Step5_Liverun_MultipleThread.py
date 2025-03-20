@@ -3,24 +3,21 @@ import os
 import numpy as np
 import time
 import threading
-from param_settings import Golf_img_Path
+from param_settings import img_car , Car_dst_points ,total_w , total_h 
+from image_processing import LuminanceBalancer, ImageStitcher, ImageAdjuster
 import concurrent.futures
 
 class VideoProcessor:
-    def __init__(self, video_paths, car_image_path, display_width=800, display_height=600, map_width=1040, map_height=1191):
+    def __init__(self, video_paths, img_car, display_width=800, display_height=600, map_width=1040, map_height=1191):
         self.video_paths = video_paths
-        self.car = cv2.imread(car_image_path, cv2.IMREAD_UNCHANGED)
+        self.car = img_car
         self.caps = {key: cv2.VideoCapture(path) for key, path in video_paths.items()}
         self.display_width = display_width
         self.display_height = display_height
         self.map_width = map_width
         self.map_height = map_height
-        self.car_dst_points = np.float32([
-            [465, 465],
-            [575, 465],
-            [465, 685],
-            [575, 685]
-        ])
+        self.car_dst_points = Car_dst_points
+
         # Load calibration data once**
         self.calibration_data = {}
         for cam_id in ["front", "left", "rear", "right"]:
@@ -111,21 +108,22 @@ class VideoProcessor:
                 # merged_car_image = warped_stack[last_nonzero_idx, np.arange(self.map_height)[:, None], np.arange(self.map_width)]
 
                 # (Very very very Fast) Option 3: Use numpy to stack images and find the last non-zero pixel
-                merged_car_image = np.zeros((self.map_height, self.map_width, 3), dtype=np.uint8)
+                final_merged_image = np.zeros((self.map_height, self.map_width, 3), dtype=np.uint8)
                 # Stack images along a new axis (shape: (4, H, W, 3))
                 warped_stack = np.stack(warped_rgba_, axis=0)
                 # Create a mask for non-zero pixels
                 mask = np.any(warped_stack != 0, axis=0)
                 # Apply np.max() for selecting the highest intensity pixel
-                merged_car_image[mask] = np.max(warped_stack, axis=0)[mask]
-
+                final_merged_image[mask] = np.max(warped_stack, axis=0)[mask]
 
                 end_time_merge = time.time()
                 # print(f"Image merging time: {end_time_merge - start_time_merge:.4f} seconds")
                 
                 end_time_total = time.time()
                 print(f"Total processing time: {end_time_total - start_time_total:.4f} seconds")
-                
+
+
+                merged_car_image = ImageAdjuster.overlay_image_perspective(final_merged_image, self.car, self.car_dst_points)
                 resized_width, resized_height = self.display_width // 2, self.display_height // 2
                 resized_images = [cv2.resize(img, (resized_width, resized_height)) for img in images]
                 top_row = np.hstack((resized_images[0], resized_images[1]))
@@ -133,9 +131,9 @@ class VideoProcessor:
                 merged_Display_image = np.vstack((top_row, bottom_row))
                 new_width = 800
                 new_height = 900
-                resized_final_image = cv2.resize(merged_car_image, (new_width, new_height))
+                resized_final_image = cv2.resize(final_merged_image, (new_width, new_height))
                 cv2.imshow("Merged 4 POV Images", merged_Display_image)
-                cv2.imshow("Merged Car Image", resized_final_image)
+                cv2.imshow("Merged Car Image", merged_car_image)
                 cv2.waitKey(1)
         
         for cap in self.caps.values():
@@ -149,6 +147,5 @@ if __name__ == '__main__':
         "rear": "../Dataset/liverun_outdoor/rear.mp4",
         "right": "../Dataset/liverun_outdoor/right.mp4",
     }
-    car_image_path = Golf_img_Path
-    processor = VideoProcessor(video_paths, car_image_path)
+    processor = VideoProcessor(video_paths, img_car, 800, 600, total_w, total_h)
     processor.run()

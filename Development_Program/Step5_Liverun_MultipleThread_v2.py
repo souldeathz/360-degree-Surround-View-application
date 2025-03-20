@@ -3,7 +3,7 @@ import os
 import numpy as np
 import time
 import threading
-from image_processing import ImageStitcher
+from image_processing import LuminanceBalancer, ImageStitcher, ImageAdjuster
 from param_settings import Golf_img_Path
 
 class ImageProcessor:
@@ -85,6 +85,8 @@ class ImageProcessor:
                 #       f"(Includes: Grab frames → Undistort & Warp frames → Store processed images)")
                 print(f"Total processing time: {end_time_total - start_time_total:.4f} seconds")
                 
+                merged_car_image = ImageAdjuster.overlay_image_perspective(final_merged_image, self.car, self.car_dst_points)
+
                 resized_width = self.display_width // 2
                 resized_height = self.display_height // 2
                 resized_images = [cv2.resize(img, (resized_width, resized_height)) for img in images]
@@ -93,7 +95,7 @@ class ImageProcessor:
                 merged_Display_image = np.vstack((top_row, bottom_row))
                 new_width = 800
                 new_height = 900
-                resized_final_image = cv2.resize(final_merged_image, (new_width, new_height))
+                resized_final_image = cv2.resize(merged_car_image, (new_width, new_height))
 
                 cv2.imshow("Merged Image", merged_Display_image)
                 cv2.imshow("Final Merged Image", resized_final_image)

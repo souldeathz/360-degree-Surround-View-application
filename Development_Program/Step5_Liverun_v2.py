@@ -3,23 +3,18 @@ import numpy as np
 import os
 import time
 from image_processing import LuminanceBalancer, ImageStitcher, ImageAdjuster
-from param_settings import Golf_img_Path
+from param_settings import img_car , Car_dst_points ,total_w , total_h 
 
 class ImageProcessor:
-    def __init__(self, video_paths, car_image_path, display_width=800, display_height=600, map_width=1040, map_height=1191):
+    def __init__(self, video_paths, img_car, display_width=800, display_height=600, map_width=1040, map_height=1191):
         self.video_paths = video_paths
-        self.car = cv2.imread(car_image_path, cv2.IMREAD_UNCHANGED)
+        self.car = img_car
         self.caps = {key: cv2.VideoCapture(path) for key, path in video_paths.items()}
         self.display_width = display_width
         self.display_height = display_height
         self.map_width = map_width
         self.map_height = map_height
-        self.car_dst_points = np.float32([
-            [465, 465],
-            [575, 465],
-            [465, 685],
-            [575, 685]
-        ])
+        self.car_dst_points = Car_dst_points
     
     def process_image(self, image, cameraID):
         yaml_filename = os.path.join('yaml', f'calibration_data_{cameraID}.yaml')
@@ -58,6 +53,7 @@ class ImageProcessor:
             
             if len(images) == 4:
                 final_merged_image = ImageStitcher.get_weights_and_masks(warped_rgba_)
+                merged_car_image = ImageAdjuster.overlay_image_perspective(final_merged_image, self.car, self.car_dst_points)
                 end_time = time.time()
                 process_time = end_time - start_time
                 print(f"Processed time in {process_time:.2f} seconds")
@@ -70,7 +66,7 @@ class ImageProcessor:
                 merged_Display_image = np.vstack((top_row, bottom_row))
                 
                 cv2.imshow("Merged Image", merged_Display_image)
-                cv2.imshow("Final Merged Image", final_merged_image)
+                cv2.imshow("Final Merged Image", merged_car_image)
                 cv2.waitKey(1)
         
         for cap in self.caps.values():
@@ -84,6 +80,5 @@ if __name__ == '__main__':
         "rear": "../Dataset/liverun_outdoor/rear.mp4",
         "right": "../Dataset/liverun_outdoor/right.mp4",
     }
-    car_image_path = Golf_img_Path
-    processor = ImageProcessor(video_paths, car_image_path)
+    processor = ImageProcessor(video_paths, img_car,800,600,total_w , total_h)
     processor.run()

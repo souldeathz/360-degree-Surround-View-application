@@ -2,7 +2,7 @@ import cv2
 import os
 import numpy as np
 import time
-from param_settings import Golf_img_Path
+from param_settings import img_car , Car_dst_points ,total_w , total_h
 from image_processing import LuminanceBalancer, ImageStitcher, ImageAdjuster
 # Video file paths
 video_paths = {
@@ -14,20 +14,9 @@ video_paths = {
 
 # Open video captures
 caps = {key: cv2.VideoCapture(path) for key, path in video_paths.items()}
-
-# Load car image with alpha channel
-car = cv2.imread(Golf_img_Path, cv2.IMREAD_UNCHANGED)
-
+# Display settings
 display_width, display_height = 800, 600
-Map_width, Map_height = 1040, 1191
-
-# Define destination points for perspective transformation
-Car_dst_points = np.float32([
-    [465, 465],  # Point 1
-    [575, 465],  # Point 2
-    [465, 685],  # Point 3
-    [575, 685]   # Point 4
-])
+Map_width, Map_height = total_w, total_h
 
 def process_image(image, cameraID):
     """
@@ -82,7 +71,7 @@ while True:
         mode = 'hard_overlay'
         # Overlay car image at specified coordinates        
         merged_car_image_ = ImageAdjuster.merge_images(warped_rgba_, mode=mode, alpha=0.25)
-        merged_car_image = ImageAdjuster.overlay_image_perspective(merged_car_image_, car, Car_dst_points)
+        merged_car_image = ImageAdjuster.overlay_image_perspective(merged_car_image_, img_car, Car_dst_points)
 
         end_time = time.time()  # End time for processing
         print(f"Processed time: {end_time - start_time:.2f} seconds")

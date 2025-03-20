@@ -4,7 +4,16 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 Golf_img_Path = '../Dataset/golf_car.png'
+img_car = cv2.imread(Golf_img_Path, cv2.IMREAD_UNCHANGED)
 camera_names = ["front", "back", "left", "right"]
+
+# Define destination points for perspective transformation
+Car_dst_points = np.float32([
+    [465, 465],  # Point 1
+    [575, 465],  # Point 2
+    [465, 685],  # Point 3
+    [575, 685]   # Point 4
+])
 
 # --------------------------------------------------------------------
 # (shift_width, shift_height): how far away the birdview looks outside
