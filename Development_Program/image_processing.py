@@ -320,6 +320,12 @@ class ImageStitcher:
         np.copyto(final_merged_image[yb:, xl:xr], ImageStitcher.BM(back))
         np.copyto(final_merged_image[yt:yb, :xl], ImageStitcher.LM(left))
         np.copyto(final_merged_image[yt:yb, xr:], ImageStitcher.RM(right))
+        threading.Thread(target=save_image, args=(ImageStitcher.FM(front), "out_Section_Images/FM.png")).start()
+        threading.Thread(target=save_image, args=(ImageStitcher.BM(back), "out_Section_Images/BM.png")).start()
+        threading.Thread(target=save_image, args=(ImageStitcher.LM(left), "out_Section_Images/LM.png")).start()
+        threading.Thread(target=save_image, args=(ImageStitcher.RM(right), "out_Section_Images/RM.png")).start()
+
+
         threading.Thread(target=Image.fromarray(final_merged_image).save, args=("out_Section_Images/final_merged_image.png",)).start()
         return final_merged_image
 

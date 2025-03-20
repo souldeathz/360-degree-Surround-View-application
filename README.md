@@ -82,9 +82,146 @@ Note that the extension lines of the four sides of the vehicle area divide the e
 
 The above parameters are saved in [param_settings.py](./Development_Program/param_settings.py) 
 
+# select feature points for the projection matrix
+
+The process of transforming raw images into a bird’s-eye view relies on defining a projective transformation, which requires carefully selecting feature points. The key to achieving this transformation is the chessboard layout, which provides a structured reference for computing the projection matrix.
+
+The process of transforming raw images into a bird’s-eye view relies on defining a projective transformation, which requires carefully selecting feature points. The key to achieving this transformation is the chessboard layout, which provides a structured reference for computing the projection matrix.
+
+1. Chessboard as the Key Reference ( [Step2_create_program_chessboard_layout.py](./Development_Program/Step2_create_program_chessboard_layout.py) )
+To accurately align each camera’s perspective, we generate a synthetic chessboard layout that acts as the foundation for perspective transformation. Each chessboard is warped and placed in **a predefined mapping area that represents the bird’s-eye view**. The key aspects of this step include:
+
+Creating a 5×7 or 7×5 chessboard grid for each camera (front, left, rear, right). `totalWidth = 1040 cm` and `totalHeight = 1191 cm`, representing the calibrated bird’s-eye view coverage.
+Warping the chessboard to match the **expected perspective of the bird’s-eye view**.
+Defining control points (feature points) that will later be used to compute homography matrices.
+This ensures that the mapping structure is consistent across all cameras and that real-world objects align properly when images are merged.
+
+| |  |   |   |
+|:-:|:-:|:-:|:-:|
+|front|back|left|right|
+|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_front.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_rear.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_left.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_Right.png"/>|
+
+2. Computing the Homography Transformation (`Step3_Projective_Transformation.py`)
+Once the chessboard reference is established, each camera image must be transformed into the **projected space** to match the predefined map. This is done through:  
+
+- **Undistorting the camera images** using calibration parameters (*intrinsic matrix and distortion coefficients*).  
+- **Detecting and refining chessboard corners** in both the test image and the reference chessboard.  
+- **Computing the homography matrix** using *RANSAC*, ensuring robustness against errors.  
+- **Warping the undistorted image** using the computed homography, aligning the raw camera perspective to the bird’s-eye view.  
+
+The **homography matrix** acts as a bridge between the raw camera perspective and the top-down map, enabling each camera to "see" the environment from the correct viewpoint.
+
+
+| |  |   |   |
+|:-:|:-:|:-:|:-:|
+|front|back|left|right|
+|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_front_Matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_rear_Matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_left_Matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_Right_Matching.png"/>|
+|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/front_image_matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/rear_image_matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/left_image_matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/right_image_matching.png"/>|
+|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/front_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/rear_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/left_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/right_warped_image.png"/>|
 
 # Stitching and smoothing of the birdseye view image
+
+The **homography matrix** acts as a bridge between the raw camera perspective and the top-down map, enabling each camera to "see" the environment from the correct viewpoint.
+
+After computing the necessary transformations, the images from all cameras are converted into **projective images** that fit into the designated bird’s-eye mapping space. These projected images are then used in subsequent steps to create a **seamless 360-degree surround view** by:  
+
+- Ensuring that all images align with the reference map.  
+- Providing accurate spatial relationships between objects.  
+- Allowing smooth blending and stitching of images.  
+
+By utilizing a structured chessboard layout and precise homography calculations, the system ensures that each camera’s output is properly mapped, creating a **realistic and distortion-free** bird’s-eye perspective.
+
+| |  |   |   |
+|:-:|:-:|:-:|:-:|
+|front|back|left|right|
+|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/front_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/rear_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/left_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/right_warped_image.png"/>|
 
 If everything goes well in the previous section, and after executing the script [Step4_merge.py](Development_Program/Step4_merge.py), you will notice the stitched bird's-eye view image:
 
 <img style="margin:0px auto;display:block" width=500 src="./Development_Program/out_merged_Images/final_merged_image.png"/>
+
+### **Detailed Explanation: `ImageStitcher.get_weights_and_masks(images)`** in  [image_processing.py](Development_Program/image_processing.py)
+
+The function **`ImageStitcher.get_weights_and_masks(images)`** plays a crucial role in merging the four camera images (*front, left, rear, right*) into a **seamless surround view**. The merging process is carefully designed to ensure **smooth transitions between images** while maintaining **visual consistency**.
+
+---
+
+**1. Image Segmentation into 8 Sections**  
+Instead of merging entire images directly, the system first **divides each image into 8 key sections**:  
+
+| **Section Name** | **Source Images** |
+|-----------------|----------------|
+| **LT (Left-Top)**  | Front & Left  |
+| **RT (Right-Top)** | Front & Right |
+| **LB (Left-Bottom)** | Rear & Left  |
+| **RB (Right-Bottom)** | Rear & Right |
+| **FM (Front-Middle)** | Front Only |
+| **BM (Back-Middle)** | Rear Only |
+| **LM (Left-Middle)** | Left Only |
+| **RM (Right-Middle)** | Right Only |
+
+
+
+Each section is responsible for merging overlapping regions where adjacent images intersect.
+
+---
+
+**2. Identifying Overlapping Areas**  
+For **each overlapping region**, the function determines how much of each image should be **blended** to create a smooth transition. The system:  
+1. **Extracts the intersecting areas** from each camera’s image.  
+2. **Computes a weight mask** for the overlapping region to avoid visible edges.  
+3. **Blends the overlapping sections smoothly** instead of performing a hard cut.  
+
+For example:  
+- The **LT (Left-Top)** section merges the **top-left area of the front image** with the **top-right area of the left image**.  
+- The **RT (Right-Top)** section merges the **top-right area of the front image** with the **top-left area of the right image**.  
+- The same concept applies to **LB and RB**, but using the **rear image instead of the front**.
+
+| |  |   |
+|:-:|:-:|:-:|
+|1|2|Merge|
+|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/FI_front.png"/>| <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/LI_left.png"/> | <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/merged_FI_LI_is_LT.png"/> |
+|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/FII_front.png"/>| <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/RII_right.png"/> | <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/merged_FI_RII_is_RT.png"/> |
+|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/LIII_left.png"/>| <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/BIII_back.png"/> | <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/merged_BIII_LIII_is_LB.png"/> |
+|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/BIV_back.png"/>| <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/RIV_right.png"/> | <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/merged_BIV_RIV_is_RB.png"/> |
+
+---
+
+**3. Applying Weight Masks for Smooth Transitions**
+To ensure that no hard edges appear in the merged image, the function applies **weighted blending** using a mask.  
+
+#### **How Weight Masks Work:**  
+- Each overlapping region is assigned a **gradual transition mask**.  
+- The transition ensures that **pixels near the center of an overlap** take equal contributions from both images.  
+- The blending factor is determined dynamically, considering **the overlap amount and pixel intensities**.
+
+For example:  
+- If **Image A** contributes **80% of a pixel**, then **Image B** contributes the remaining **20%**.  
+- In the center of an overlap, both images contribute **50% each**.  
+- At the edge of an overlap, one image dominates to prevent ghosting effects.
+
+This avoids abrupt **brightness changes** and ensures a **seamless merge**.
+
+---
+
+**4. Merging All Sections into a Final Image**  
+After merging all overlapping sections (*LT, RT, LB, RB*), the remaining non-overlapping sections (*FM, BM, LM, RM*) are **directly added**.  
+Finally, all **8 sections** are combined into the final **full bird’s-eye view image**.
+
+| |  |   |
+|:-:|:-:|:-:|
+|1|2|3|
+|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/merged_FI_LI_is_LT.png"/>| <img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/FM.png"/> | <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/merged_FI_RII_is_RT.png"/> |
+|<img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/LM.png"/>| **Car** | <img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/RM.png"/> |
+|<img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/merged_BIII_LIII_is_LB.png"/>| <img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/BM.png"/> | <img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/merged_BIV_RIV_is_RB.png"/> |
+
+---
+
+### **Conclusion**  
+The `ImageStitcher.get_weights_and_masks(images)` function is **crucial** because it:  
+✅ **Divides images into meaningful sections** for precise merging.  
+✅ **Identifies and processes overlapping areas** for smooth blending.  
+✅ **Uses weight masks** to avoid visible edges and brightness shifts.  
+✅ **Constructs a final seamless bird’s-eye view** by integrating all 8 sections.  
+
+This structured approach ensures that the **merged 360-degree view is realistic, distortion-free, and visually consistent**. 

@@ -24,7 +24,7 @@ Date: [Date]
 import cv2
 import numpy as np
 from PIL import Image
-from param_settings import xl, xr, yt, yb
+from param_settings import xl, xr, yt, yb ,Car_dst_points
 from image_processing import LuminanceBalancer, ImageStitcher, ImageAdjuster
 
 Dataset_path = '../Dataset/'
@@ -79,17 +79,9 @@ def main():
     white_balanced = LuminanceBalancer.make_white_balance(merged)
     cv2.imwrite(f'out_merged_Images/white_balanced_result_{mode}.png', white_balanced)
 
-    # Define destination points for perspective transformation
-    dst_points = np.float32([
-        [465, 465],  # Top-left corner
-        [575, 465],  # Top-right corner
-        [465, 685],  # Bottom-left corner
-        [575, 685]   # Bottom-right corner
-    ])
-
     # Overlay the car image onto the final merged images
-    final_merged_image_car = ImageAdjuster.overlay_image_perspective(final_merged_image, car, dst_points)
-    white_balanced_car = ImageAdjuster.overlay_image_perspective(white_balanced, car, dst_points)
+    final_merged_image_car = ImageAdjuster.overlay_image_perspective(final_merged_image, car, Car_dst_points)
+    white_balanced_car = ImageAdjuster.overlay_image_perspective(white_balanced, car, Car_dst_points)
 
     # Combine both processed images side by side for comparison
     comparison_image = np.hstack((white_balanced_car, final_merged_image_car))
