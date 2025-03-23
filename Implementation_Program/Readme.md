@@ -28,23 +28,62 @@ Before proceeding with the installation, make sure you have:
 
 ## 🚀 Ready to Begin?
 
-Once the Jetson is flashed, ROS 2 is running in Docker, and SSD is mounted:
-1. Connect to the Jetson via SSH or VS Code Remote.
-2. Navigate to your mounted SSD directory:
-   ```bash
-   cd /mnt/ssd/BFV_project
-   ```
-3. Launch your ROS 2 container:
-   ```bash
-   ./run_ros2_bfv.sh
-   ```
-4. Inside the container, navigate to the workspace:
-   ```bash
-   cd /root/code/ros2_ws
-   colcon build
-   source install/setup.bash
-   ros2 run your_python_package your_node.py
-   ```
+Once your Jetson is flashed, ROS 2 is running in Docker, and the SSD is mounted:
+
+### 1. Connect to Jetson via SSH or VS Code Remote
+
+Follow the [Remote Terminal Guide](./docs/Jetson%20AGX%20Xavier%20-%20Remote%20Terminal%20Guide.md) to connect from your host machine.
+
+---
+
+### 2. Go to Your Project Directory on the SSD
+
+```bash
+cd /mnt/ssd/BFV_project
+```
+
+---
+
+### 3. Launch the ROS 2 Docker Container
+
+```bash
+./run_ros2_bfv.sh
+```
+
+---
+
+### 4. Inside the Container: Build & Run Your ROS 2 Workspace
+
+```bash
+cd /root/code/ros2_ws
+colcon build
+source install/setup.bash
+ros2 run your_python_package your_node.py
+```
+
+---
+
+### 5. Install Extra Packages (e.g., cv_bridge)
+
+```bash
+sudo apt update
+sudo apt install -y python3-pip ros-humble-cv-bridge
+sudo apt install -y \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    python3-argcomplete \
+    ros-humble-image-transport \
+    ros-humble-image-tools \
+    ros-humble-rqt \
+    ros-humble-rqt-image-view \
+    ros-humble-cv-bridge \
+    python3-opencv \
+    libopencv-dev \
+    build-essential
+```
+
+For tutorials on using `cv_bridge` to convert between ROS and OpenCV images in Python:  
+🔗 [ROS Wiki – cv_bridge Python Tutorial](https://wiki.ros.org/cv_bridge/Tutorials/ConvertingBetweenROSImagesAndOpenCVImagesPython)
 
 ---
 
