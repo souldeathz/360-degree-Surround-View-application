@@ -211,17 +211,8 @@ Finally, all **8 sections** are combined into the final **full bird’s-eye view
 | |  |   |
 |:-:|:-:|:-:|
 |1|2|3|
-|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/merged_FI_LI_is_LT.png"/>| <img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/FM.png"/> | <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/merged_FI_RII_is_RT.png"/> |
+|<img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/merged_FI_LI_is_LT.png"/>| <img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/FM.png"/> | <img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/merged_FI_RII_is_RT.png"/> |
 |<img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/LM.png"/>| **Car** | <img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/RM.png"/> |
 |<img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/merged_BIII_LIII_is_LB.png"/>| <img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/BM.png"/> | <img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/merged_BIV_RIV_is_RB.png"/> |
 
 ---
-
-### **Conclusion**  
-The `ImageStitcher.get_weights_and_masks(images)` function is **crucial** because it:  
-✅ **Divides images into meaningful sections** for precise merging.  
-✅ **Identifies and processes overlapping areas** for smooth blending.  
-✅ **Uses weight masks** to avoid visible edges and brightness shifts.  
-✅ **Constructs a final seamless bird’s-eye view** by integrating all 8 sections.  
-
-This structured approach ensures that the **merged 360-degree view is realistic, distortion-free, and visually consistent**. 
