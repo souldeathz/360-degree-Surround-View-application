@@ -133,7 +133,7 @@ class VideoProcessor:
                 new_height = 900
                 resized_final_image = cv2.resize(final_merged_image, (new_width, new_height))
                 cv2.imshow("Merged 4 POV Images", merged_Display_image)
-                cv2.imshow("Merged Car Image", merged_car_image)
+                cv2.imshow("Merged Car Image", resized_final_image)
                 cv2.waitKey(1)
         
         for cap in self.caps.values():
