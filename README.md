@@ -224,3 +224,4 @@ referance :
 - [Fisheye or Normal Camera Intrinsic and Extrinsic Calibration. Surround Camera Bird Eye View Generator.](https://github.com/dyfcalid/CameraCalibration)
 - [TensorFlow Implementation for Computing a Semantically Segmented Bird's Eye View (BEV) Image Given the Images of Multiple Vehicle-Mounted Cameras.](https://github.com/ika-rwth-aachen/Cam2BEV)
 - [From semantic segmentation to semantic bird’s-eye view in the CARLA simulator](https://medium.com/asap-report/from-semantic-segmentation-to-semantic-birds-eye-view-in-the-carla-simulator-1e636741af3f)
+https://patrick-llgc.github.io/Learning-Deep-Learning/paper_notes/cam2bev.html
