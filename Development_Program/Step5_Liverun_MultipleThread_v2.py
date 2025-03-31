@@ -107,10 +107,14 @@ class ImageProcessor:
 
 if __name__ == '__main__':
     video_paths = {
-        "front": "../Dataset/liverun_outdoor/front.mp4",
-        "left": "../Dataset/liverun_outdoor/left.mp4",
-        "rear": "../Dataset/liverun_outdoor/rear.mp4",
-        "right": "../Dataset/liverun_outdoor/right.mp4",
+        "front": "../Dataset/liverun_outdoor_Day/front.mp4",
+        "left": "../Dataset/liverun_outdoor_Day/left.mp4",
+        "rear": "../Dataset/liverun_outdoor_Day/rear.mp4",
+        "right": "../Dataset/liverun_outdoor_Day/right.mp4",        
+        # "front": "../Dataset/liverun_outdoor/front.mp4",
+        # "left": "../Dataset/liverun_outdoor/left.mp4",
+        # "rear": "../Dataset/liverun_outdoor/rear.mp4",
+        # "right": "../Dataset/liverun_outdoor/right.mp4",
     }
     car_image_path = Golf_img_Path
     processor = ImageProcessor(video_paths, car_image_path)

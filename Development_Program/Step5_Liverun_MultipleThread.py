@@ -142,10 +142,14 @@ class VideoProcessor:
 
 if __name__ == '__main__':
     video_paths = {
-        "front": "../Dataset/liverun_outdoor/front.mp4",
-        "left": "../Dataset/liverun_outdoor/left.mp4",
-        "rear": "../Dataset/liverun_outdoor/rear.mp4",
-        "right": "../Dataset/liverun_outdoor/right.mp4",
+        "front": "../Dataset/liverun_outdoor_Day/front.mp4",
+        "left": "../Dataset/liverun_outdoor_Day/left.mp4",
+        "rear": "../Dataset/liverun_outdoor_Day/rear.mp4",
+        "right": "../Dataset/liverun_outdoor_Day/right.mp4",          
+        # "front": "../Dataset/liverun_outdoor/front.mp4",
+        # "left": "../Dataset/liverun_outdoor/left.mp4",
+        # "rear": "../Dataset/liverun_outdoor/rear.mp4",
+        # "right": "../Dataset/liverun_outdoor/right.mp4",
     }
     processor = VideoProcessor(video_paths, img_car, 800, 600, total_w, total_h)
     processor.run()
