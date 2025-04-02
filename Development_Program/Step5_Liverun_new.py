@@ -12,6 +12,73 @@ video_paths = {
     "right": "../Dataset/liverun_outdoor/right.mp4",
 }
 
+# === สร้าง Blend Mask ต่อกล้อง ===
+def create_blend_mask(name, width, height, car_width, car_height):
+    mask = np.zeros((height, width), dtype=np.uint8)
+
+    if name == 'front':
+        points = np.array([
+            [0, 0],
+            [width, 0],
+            [width, height // 5],
+            [(width + car_width) // 2, (height - car_height) // 2],
+            [(width - car_width) // 2, (height - car_height) // 2],
+            [0, height // 5]
+        ], dtype=np.int32)
+    elif name == 'rear':
+        points = np.array([
+            [0, height],
+            [width, height],
+            [width, height - height // 5],
+            [(width + car_width) // 2, (height + car_height) // 2],
+            [(width - car_width) // 2, (height + car_height) // 2],
+            [0, height - height // 5]
+        ], dtype=np.int32)
+    elif name == 'left':
+        points = np.array([
+            [0, 0],
+            [0, height],
+            [width // 5, height],
+            [(width - car_width) // 2, (height + car_height) // 2],
+            [(width - car_width) // 2, (height - car_height) // 2],
+            [width // 5, 0]
+        ], dtype=np.int32)
+    elif name == 'right':
+        points = np.array([
+            [width, 0],
+            [width, height],
+            [width - width // 5, height],
+            [(width + car_width) // 2, (height + car_height) // 2],
+            [(width + car_width) // 2, (height - car_height) // 2],
+            [width - width // 5, 0]
+        ], dtype=np.int32)
+    else:
+        raise ValueError("Invalid camera name")
+
+    cv2.fillPoly(mask, [points], 255)
+    return np.repeat(mask[:, :, np.newaxis], 3, axis=2) / 255.0  # shape: (H, W, 3) float32
+
+# === Blend ภาพ 4 กล้อง ===
+def blend_warped_images(warped_images, width, height, car_width, car_height):
+    masks = {
+        "front": create_blend_mask("front", width, height, car_width, car_height),
+        "rear":  create_blend_mask("rear", width, height, car_width, car_height),
+        "left":  create_blend_mask("left", width, height, car_width, car_height),
+        "right": create_blend_mask("right", width, height, car_width, car_height),
+    }
+
+    # จับคู่กล้องกับลำดับ warped_rgba_
+    camera_order = ["front", "left", "rear", "right"]
+    blended = np.zeros_like(warped_images[0], dtype=np.float32)
+
+    for i, cam_id in enumerate(camera_order):
+        blended += warped_images[i].astype(np.float32) * masks[cam_id]
+
+    return np.clip(blended, 0, 255).astype(np.uint8)
+
+# === วางภาพรถไว้ตรงกลาง ===
+
+
 # Open video captures
 caps = {key: cv2.VideoCapture(path) for key, path in video_paths.items()}
 # Display settings
@@ -35,13 +102,10 @@ def process_image(image, cameraID):
     dist_coeffs = fs.getNode("dist_coeffs").mat()
     H = fs.getNode("homography").mat()
 
-    # Undistort the image first
-    img_src_undistorted = cv2.undistort(image, camera_matrix, dist_coeffs)
-
-    # Then rotate if it's rear or right
     if cameraID in ["rear", "right"]:
-        img_src_undistorted = cv2.rotate(img_src_undistorted, cv2.ROTATE_180)
-        
+        image = cv2.rotate(image, cv2.ROTATE_180)
+    # Undistort the image using the camera matrix and distortion coefficients
+    img_src_undistorted = cv2.undistort(image, camera_matrix, dist_coeffs)
     # Apply perspective warp using the homography matrix    
     warped = cv2.warpPerspective(img_src_undistorted, H, (Map_width, Map_height))
     # Convert the warped image to RGBA format
@@ -73,9 +137,10 @@ while True:
         # Merge images using the provided merge_images function
         mode = 'hard_overlay'
         # Overlay car image at specified coordinates        
-        merged_car_image_ = ImageAdjuster.merge_images(warped_rgba_, mode=mode, alpha=0.25)
-        merged_car_image = ImageAdjuster.overlay_image_perspective(merged_car_image_, img_car, Car_dst_points)
+        # รวมภาพ 4 กล้องด้วย blend mask
+        merged_blended = blend_warped_images(warped_rgba_, Map_width, Map_height, car_width=250, car_height=400)
 
+        # แปะรถลงภาพที่รวมแล้ว
         end_time = time.time()  # End time for processing
         print(f"Processed time: {end_time - start_time:.2f} seconds")
 
@@ -88,7 +153,7 @@ while True:
         merged_Display_image = np.vstack((top_row, bottom_row))
 
         # Display the final merged image with the car overlay
-        resized_merged_car_image = cv2.resize(merged_car_image, (500, 900))
+        resized_merged_car_image = cv2.resize(merged_blended, (500, 900))
 
         # Display the merged image
         cv2.imshow("Merged Image", merged_Display_image)
@@ -100,3 +165,5 @@ while True:
 for cap in caps.values():
     cap.release()
 cv2.destroyAllWindows()
+
+

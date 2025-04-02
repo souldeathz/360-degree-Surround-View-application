@@ -44,74 +44,84 @@ def load_calibration_parameters(yaml_filename):
     fs.release()
     return camera_matrix, dist_coeffs, resolution
 
-def exCalib(img_src, img_dst, type):
-    """Estimates homography between an undistorted test image and a chessboard reference image."""
-    
-    # Define the chessboard size (number of inner corners)
-    # Note: If the chessboard has a different number of squares, adjust pattern_size accordingly.
-    # (columns, rows) for inner corners
-    pattern_size = (6, 4)  # For a 7x5 chessboard (inner corners 6x4)
+def exCalib(img_src, img_dst, camera_type):
+    """
+    Estimates homography between an undistorted test image and a chessboard reference image.
+    Handles automatic rotation detection for upside-down cases.
+    """
+    pattern_size = (6, 4)  # Inner corners (cols, rows)
 
-    # Convert images to grayscale
     gray_src = cv2.cvtColor(img_src, cv2.COLOR_BGR2GRAY)
     gray_dst = cv2.cvtColor(img_dst, cv2.COLOR_BGR2GRAY)
 
-    scale_factor = 1
+    scale_factor = 1.0
     resized_gray_dst = cv2.resize(gray_dst, None, fx=scale_factor, fy=scale_factor)
 
-    # Detect chessboard corners in the source image
+    # Detect corners
     ret_src, corners_src = cv2.findChessboardCorners(gray_src, pattern_size, None)
     if not ret_src:
-        print("Error: Chessboard corners not found in the source image.")
+        print("❌ Chessboard not found in source image.")
         return None
 
-    # Detect chessboard corners in the destination (reference) image
     ret_dst, corners_dst = cv2.findChessboardCorners(resized_gray_dst, pattern_size, None)
     if not ret_dst:
-        print("Error: Chessboard corners not found in the destination image.")
+        print("❌ Chessboard not found in destination image.")
         return None
 
-    corners_dst = corners_dst / scale_factor  # Adjusting for scale factor if needed
+    corners_dst = corners_dst / scale_factor  # Rescale if resized
 
-    # Refine the detected corner positions for better accuracy
+    # Refine corners
     criteria = (cv2.TermCriteria_EPS + cv2.TermCriteria_MAX_ITER, 30, 0.001)
     corners_src = cv2.cornerSubPix(gray_src, corners_src, (11, 11), (-1, -1), criteria)
-
-    # Check if the detected chessboard in the destination image is upside down
-    # This is determined by computing the cross product of the vectors formed by the top-left to top-right 
-    # and top-left to bottom-left corners
-    vector1 = corners_src[1] - corners_dst[0]
-    vector2 = corners_src[2] - corners_dst[0]
-    cross_product = np.cross(vector1, vector2)
-    print("Cross Product:", cross_product)
-
-    if cross_product > 0 and "Right" in type:
-        print("Detected corners in the destination image are upside down. Rotating 180 degrees.")
-        # Rotate the detected corners by 180 degrees
-        corners_src = np.rot90(corners_src.reshape(pattern_size[1], pattern_size[0], 2), 2).reshape(-1, 2)
-
     corners_dst = cv2.cornerSubPix(gray_dst, corners_dst, (11, 11), (-1, -1), criteria)
 
-    # Draw the detected corners on the source image
+    # --- Auto check upside down ---
+    # Use vector cross product to detect orientation mismatch
+    vec_src_1 = corners_src[1] - corners_src[0]
+    vec_src_2 = corners_src[pattern_size[0]] - corners_src[0]
+    cross_src = np.cross(vec_src_1.flatten(), vec_src_2.flatten())
+
+    vec_dst_1 = corners_dst[1] - corners_dst[0]
+    vec_dst_2 = corners_dst[pattern_size[0]] - corners_dst[0]
+    cross_dst = np.cross(vec_dst_1.flatten(), vec_dst_2.flatten())
+
+    print(f"[{camera_type}] Cross source: {cross_src:.2f}, Cross destination: {cross_dst:.2f}")
+
+    # If cross product signs differ, one of the chessboards is upside down
+    if np.sign(cross_src) != np.sign(cross_dst):
+        print(f"⚠️ Detected rotation mismatch for {camera_type}. Rotating source corners 180°.")
+        corners_src = np.rot90(corners_src.reshape(pattern_size[1], pattern_size[0], 2), 2).reshape(-1, 2)
+
+    # Optional: show visual debug
+    # Draw chessboard corners on source image
     img_src_display = img_src.copy()
     cv2.drawChessboardCorners(img_src_display, pattern_size, corners_src, ret_src)
-    
-    # Draw the detected corners on the destination image
+
+    # Draw chessboard corners on destination (reference) image
     img_dst_display = img_dst.copy()
     cv2.drawChessboardCorners(img_dst_display, pattern_size, corners_dst, ret_dst)
 
-    # Display the detected corners on both images
-    cv2.imshow('Detected Corners - Source', img_src_display)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    cv2.imshow('Detected Corners - Destination', img_dst_display)
+    # Resize both to the same size (just in case)
+    height = max(img_src_display.shape[0], img_dst_display.shape[0])
+    width = max(img_src_display.shape[1], img_dst_display.shape[1])
+    img_src_display = cv2.resize(img_src_display, (width, height))
+    img_dst_display = cv2.resize(img_dst_display, (width, height))
+
+    # Stack them horizontally
+    stacked = np.hstack((img_src_display, img_dst_display))
+
+    # Resize the final stacked image for display only
+    scale = 0.5  # 50% of original size
+    display_size = (int(stacked.shape[1] * scale), int(stacked.shape[0] * scale))
+    stacked_resized = cv2.resize(stacked, display_size)
+    # Show both side-by-side
+    cv2.imshow(f"Debug Corners - {camera_type}", stacked_resized)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-    # Compute homography using RANSAC to ensure robustness
-    homography, mask = cv2.findHomography(corners_src, corners_dst, cv2.RANSAC)
-
-    return homography
+    # Compute homography
+    H, mask = cv2.findHomography(corners_src, corners_dst, cv2.RANSAC)
+    return H
 
 
 if __name__ == "__main__":
@@ -128,14 +138,10 @@ if __name__ == "__main__":
 
         # Load the test image and apply undistortion
         img_src = cv2.imread(f'{Dataset_path}{test_folder}.jpg')
-        if test_folder == 'rear':
-            img_src = cv2.rotate(img_src, cv2.ROTATE_180)
-
-        if test_folder == 'right':
-            img_src = cv2.rotate(img_src, cv2.ROTATE_180)
-
-
         img_src_undistorted = cv2.undistort(img_src, camera_matrix, dist_coeffs)
+
+        if test_folder in ['rear', 'right']:
+            img_src_undistorted = cv2.rotate(img_src_undistorted, cv2.ROTATE_180)
 
         # Load the reference chessboard image
         img_dst = cv2.imread(chessboard_folder)

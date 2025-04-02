@@ -22,38 +22,22 @@ Output:
 import cv2
 import numpy as np
 import os
+from param_settings import xl, xr, yt, yb ,Car_dst_points,chessboard_config,total_w,total_h
 
 # Set background image size (white background)
-image_size_W = 1040
-image_size_H = 1191
+image_size_W = total_w
+image_size_H = total_h
 background = np.ones((image_size_H, image_size_W, 3), dtype=np.uint8) * 255
 
 
 # Define the four chessboard configurations
-chessboard_config = {
-    "front": {
-        "inner_dst_pts": np.array([[450, 310], [590, 310], [450, 410], [590, 410]], dtype=np.float32),
-        "rows": 5, "cols": 7, "chessboard_width": 140, "chessboard_height": 100
-    },
-    "left": {
-        "inner_dst_pts": np.array([[310, 524], [410, 524], [310, 664], [410, 664]], dtype=np.float32),
-        "rows": 7, "cols": 5, "chessboard_width": 100, "chessboard_height": 140
-    },
-    "Right": {
-        "inner_dst_pts": np.array([[630, 524], [730, 524], [630, 664], [730, 664]], dtype=np.float32),
-        "rows": 7, "cols": 5, "chessboard_width": 100, "chessboard_height": 140
-    },
-    "rear": {
-        "inner_dst_pts": np.array([[450, 781], [590, 781], [450, 891], [590, 891]], dtype=np.float32),
-        "rows": 5, "cols": 7, "chessboard_width": 140, "chessboard_height": 100
-    }
-}
+chessboard_config_ = chessboard_config
 
 # Create output directory if not exists
 output_dir = "chessboard"
 os.makedirs(output_dir, exist_ok=True)
 
-for image_selected, config in chessboard_config.items():
+for image_selected, config in chessboard_config_.items():
     print(f"Processing chessboard for: {image_selected}")
 
     # Extract configuration

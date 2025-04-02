@@ -21,12 +21,12 @@ class ImageProcessor:
         fs = cv2.FileStorage(yaml_filename, cv2.FILE_STORAGE_READ)
         camera_matrix = fs.getNode("camera_matrix").mat()
         dist_coeffs = fs.getNode("dist_coeffs").mat()
-        H = fs.getNode("homography").mat()
-        
-        if cameraID in ["rear", "right"]:
-            image = cv2.rotate(image, cv2.ROTATE_180)
-        
+        H = fs.getNode("homography").mat()     
+        # Undistort the image first
         img_src_undistorted = cv2.undistort(image, camera_matrix, dist_coeffs)
+        # Then rotate if it's rear or right
+        if cameraID in ["rear", "right"]:
+            img_src_undistorted = cv2.rotate(img_src_undistorted, cv2.ROTATE_180)
         warped = cv2.warpPerspective(img_src_undistorted, H, (self.map_width, self.map_height))
         warped_rgba = cv2.cvtColor(warped, cv2.COLOR_BGR2BGRA)
         warped_rgba[np.all(warped_rgba[:, :, :3] == [0, 0, 0], axis=-1)] = [0, 0, 0, 0]
@@ -64,9 +64,10 @@ class ImageProcessor:
                 top_row = np.hstack((resized_images[0], resized_images[1]))
                 bottom_row = np.hstack((resized_images[2], resized_images[3]))
                 merged_Display_image = np.vstack((top_row, bottom_row))
-                
+                # Display the final merged image with the car overlay
+                resized_merged_car_image = cv2.resize(merged_car_image, (500, 900))
                 cv2.imshow("Merged Image", merged_Display_image)
-                cv2.imshow("Final Merged Image", merged_car_image)
+                cv2.imshow("Final Merged Image", resized_merged_car_image)
                 cv2.waitKey(1)
         
         for cap in self.caps.values():
