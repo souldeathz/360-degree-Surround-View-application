@@ -5,7 +5,7 @@ The project is not very complex, but it does involve some careful computations. 
 
 The hardware used in the Golf car project includes:
 
-<img style="margin:0px auto;display:block" width=400 src="./Hardware_Setup/layout_0.jpg"/>
+<img style="margin:0px auto;display:block" width=400 src="Hardware_Setup/layout_0.jpg"/>
 
 1. Four USB fisheye cameras, resolution: 1280x720.
 2. Jetson AGX Xavier developer kit: [Purchase This](https://developer.nvidia.com/buy-jetson)
