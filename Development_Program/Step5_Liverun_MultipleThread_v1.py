@@ -44,8 +44,6 @@ class VideoProcessor:
         H = calib["homography"]
 
         img_src_undistorted = cv2.undistort(image, camera_matrix, dist_coeffs)
-        if cameraID in ["rear", "right"]:
-            img_src_undistorted = cv2.rotate(img_src_undistorted, cv2.ROTATE_180)
 
         warped = cv2.warpPerspective(img_src_undistorted, H, (self.map_width, self.map_height))
         process_time = time.time() - start_time
@@ -93,7 +91,7 @@ class VideoProcessor:
                 resized_height = self.display_height // 2
                 resized_images = [cv2.resize(img, (resized_width, resized_height)) for img in images]
 
-                cam_names = ["Front", "Left", "Rear", "Right"]
+                cam_names = ["front", "left", "rear", "right"]
                 for i, img in enumerate(resized_images):
                     text = f"{cam_names[i]}: {processing_times[i]*1000:.1f} ms"
                     cv2.putText(img, text, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
@@ -130,24 +128,31 @@ class VideoProcessor:
             time.sleep(0.01)
 
     def run(self):
-        display_thread = threading.Thread(target=self.display_loop, daemon=True)
-        display_thread.start()
-        self.processing_loop()  # จะหยุดเองถ้า self.running = False
+        try:
+            # Start display in background thread
+            display_thread = threading.Thread(target=self.display_loop, daemon=True)
+            display_thread.start()
 
-        for cap in self.caps.values():
-            cap.release()
-        cv2.destroyAllWindows()
+            # Run main processing loop (blocking)
+            self.processing_loop()
+
+        except KeyboardInterrupt:
+            print("🔴 KeyboardInterrupt received. Stopping...")
+            self.running = False  # Signal all loops to stop
+
+        finally:
+            # Ensure everything is cleaned up properly
+            for cap in self.caps.values():
+                cap.release()
+            cv2.destroyAllWindows()
+            print("✅ All resources released.")
 
 if __name__ == '__main__':
     video_paths = {
-        "front": "../Dataset/liverun_outdoor_Day/front.mp4",
-        "left": "../Dataset/liverun_outdoor_Day/left.mp4",
-        "rear": "../Dataset/liverun_outdoor_Day/rear.mp4",
-        "right": "../Dataset/liverun_outdoor_Day/right.mp4",          
-        # "front": "../Dataset/liverun_outdoor/front.mp4",
-        # "left": "../Dataset/liverun_outdoor/left.mp4",
-        # "rear": "../Dataset/liverun_outdoor/rear.mp4",
-        # "right": "../Dataset/liverun_outdoor/right.mp4",
+        "front": "../Dataset/liverun_outdoor_VDO_Night_1/front.mp4",
+        "left": "../Dataset/liverun_outdoor_VDO_Night_1/left.mp4",
+        "rear": "../Dataset/liverun_outdoor_VDO_Night_1/rear.mp4",
+        "right": "../Dataset/liverun_outdoor_VDO_Night_1/right.mp4",
     }
     processor = VideoProcessor(video_paths, img_car)
     processor.run()

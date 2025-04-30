@@ -23,10 +23,10 @@ Output:
       ├── front_undistorted.jpg
       ├── left_original.jpg
       ├── left_undistorted.jpg
-      ├── Right_original.jpg
-      ├── Right_undistorted.jpg
-      ├── Rear_original.jpg
-      ├── Rear_undistorted.jpg
+      ├── right_original.jpg
+      ├── right_undistorted.jpg
+      ├── rear_original.jpg
+      ├── rear_undistorted.jpg
 """
 import os
 import numpy as np
@@ -107,7 +107,7 @@ os.makedirs('yaml', exist_ok=True)
 os.makedirs('out_undistorted_Images', exist_ok=True)
 
 # Define multiple test folders to process
-test_folders = ['front', 'left', 'Right', 'Rear']
+test_folders = ['front', 'left', 'right', 'rear']
 
 for test_folder in test_folders:
     print(f"\nProcessing test folder: {test_folder}")

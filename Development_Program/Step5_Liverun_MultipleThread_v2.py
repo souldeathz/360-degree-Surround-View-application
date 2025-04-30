@@ -37,8 +37,6 @@ class ImageProcessor:
         camera_matrix, dist_coeffs, H = calib["camera_matrix"], calib["dist_coeffs"], calib["homography"]
 
         img_src_undistorted = cv2.undistort(image, camera_matrix, dist_coeffs)
-        if cameraID in ["rear", "right"]:
-            img_src_undistorted = cv2.rotate(img_src_undistorted, cv2.ROTATE_180)
 
         warped = cv2.warpPerspective(img_src_undistorted, H, (self.map_width, self.map_height))
         proc_time = time.time() - start_time
@@ -55,7 +53,7 @@ class ImageProcessor:
         processing_times[index] = proc_time
 
     def run(self):
-        cam_names = ["Front", "Left", "Rear", "Right"]
+        cam_names = ["front", "left", "rear", "right"]
         while True:
             start_time_total = time.time()
             images = [None] * len(self.caps)
@@ -106,10 +104,10 @@ class ImageProcessor:
 
 if __name__ == '__main__':
     video_paths = {
-        "front": "../Dataset/liverun_outdoor_Day/front.mp4",
-        "left": "../Dataset/liverun_outdoor_Day/left.mp4",
-        "rear": "../Dataset/liverun_outdoor_Day/rear.mp4",
-        "right": "../Dataset/liverun_outdoor_Day/right.mp4",
+        "front": "../Dataset/liverun_outdoor_VDO_Night_1/front.mp4",
+        "left": "../Dataset/liverun_outdoor_VDO_Night_1/left.mp4",
+        "rear": "../Dataset/liverun_outdoor_VDO_Night_1/rear.mp4",
+        "right": "../Dataset/liverun_outdoor_VDO_Night_1/right.mp4",
     }
     processor = ImageProcessor(video_paths, img_car)
     processor.run()

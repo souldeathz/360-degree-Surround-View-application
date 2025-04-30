@@ -75,6 +75,11 @@ def exCalib(img_src, img_dst, camera_type):
     corners_src = cv2.cornerSubPix(gray_src, corners_src, (11, 11), (-1, -1), criteria)
     corners_dst = cv2.cornerSubPix(gray_dst, corners_dst, (11, 11), (-1, -1), criteria)
 
+    # # ✅ เพิ่ม logic หมุน corner สำหรับ rear / right
+    if camera_type in ['rear', 'right']:
+        print(f"↩️ Rotating corners_src 180° logically for {camera_type}")
+        corners_src = np.rot90(corners_src.reshape(pattern_size[1], pattern_size[0], 2), 2).reshape(-1, 2)
+
     # --- Auto check upside down ---
     # Use vector cross product to detect orientation mismatch
     vec_src_1 = corners_src[1] - corners_src[0]
@@ -139,9 +144,6 @@ if __name__ == "__main__":
         # Load the test image and apply undistortion
         img_src = cv2.imread(f'{Dataset_path}{test_folder}.jpg')
         img_src_undistorted = cv2.undistort(img_src, camera_matrix, dist_coeffs)
-
-        if test_folder in ['rear', 'right']:
-            img_src_undistorted = cv2.rotate(img_src_undistorted, cv2.ROTATE_180)
 
         # Load the reference chessboard image
         img_dst = cv2.imread(chessboard_folder)
