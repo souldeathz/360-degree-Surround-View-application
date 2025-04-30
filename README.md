@@ -115,9 +115,9 @@ The **homography matrix** acts as a bridge between the raw camera perspective an
 | |  |   |   |
 |:-:|:-:|:-:|:-:|
 |front|back|left|right|
-|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_front_Matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_rear_Matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_left_Matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_Right_Matching.png"/>|
-|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/front_image_matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/Rear_image_matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/left_image_matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/right_image_matching.png"/>|
-|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/front_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/Rear_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/left_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/right_warped_image.png"/>|
+|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/warped_chessboard_front_Matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/warped_chessboard_rear_Matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/warped_chessboard_left_Matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/warped_chessboard_Right_Matching.png"/>|
+|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/front_image_matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/Rear_image_matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/left_image_matching.png"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/right_image_matching.png"/>|
+|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/front_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/Rear_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/left_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/right_warped_image.png"/>|
 
 # Stitching and smoothing of the birdseye view image
 
@@ -134,7 +134,7 @@ By utilizing a structured chessboard layout and precise homography calculations,
 | |  |   |   |
 |:-:|:-:|:-:|:-:|
 |front|back|left|right|
-|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/front_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/Rear_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/left_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/right_warped_image.png"/>|
+|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/front_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/Rear_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/left_warped_image.png"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/right_warped_image.png"/>|
 
 If everything goes well in the previous section, and after executing the script [Step4_merge.py](Development_Program/Step4_merge.py), you will notice the stitched bird's-eye view image:
 
@@ -180,10 +180,10 @@ For example:
 | |  |   |
 |:-:|:-:|:-:|
 |1|2|Merge|
-|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/FI_front.png"/>| <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/LI_left.png"/> | <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/merged_FI_LI_is_LT.png"/> |
-|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/FII_front.png"/>| <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/RII_right.png"/> | <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/merged_FI_RII_is_RT.png"/> |
-|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/LIII_left.png"/>| <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/BIII_back.png"/> | <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/merged_BIII_LIII_is_LB.png"/> |
-|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/BIV_back.png"/>| <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/RIV_right.png"/> | <img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Merge_image/merged_BIV_RIV_is_RB.png"/> |
+|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Merge_image/FI_front.png"/>| <img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Merge_image/LI_left.png"/> | <img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Merge_image/merged_FI_LI_is_LT.png"/> |
+|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Merge_image/FII_front.png"/>| <img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Merge_image/RII_right.png"/> | <img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Merge_image/merged_FI_RII_is_RT.png"/> |
+|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Merge_image/LIII_left.png"/>| <img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Merge_image/BIII_back.png"/> | <img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Merge_image/merged_BIII_LIII_is_LB.png"/> |
+|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Merge_image/BIV_back.png"/>| <img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Merge_image/RIV_right.png"/> | <img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Merge_image/merged_BIV_RIV_is_RB.png"/> |
 
 ---
 
@@ -211,9 +211,9 @@ Finally, all **8 sections** are combined into the final **full bird’s-eye view
 | |  |   |
 |:-:|:-:|:-:|
 |1|2|3|
-|<img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/merged_FI_LI_is_LT.png"/>| <img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/FM.png"/> | <img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/merged_FI_RII_is_RT.png"/> |
-|<img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/LM.png"/>| **Car** | <img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/RM.png"/> |
-|<img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/merged_BIII_LIII_is_LB.png"/>| <img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/BM.png"/> | <img style="margin:0px auto;display:block" width=200 height=200 src="./Hardware_Setup/Result/Merge_image/merged_BIV_RIV_is_RB.png"/> |
+|<img style="margin:0px auto;display:block" width=200 height=200 src="Hardware_Setup/Result/Merge_image/merged_FI_LI_is_LT.png"/>| <img style="margin:0px auto;display:block" width=200 height=200 src="Hardware_Setup/Result/Merge_image/FM.png"/> | <img style="margin:0px auto;display:block" width=200 height=200 src="Hardware_Setup/Result/Merge_image/merged_FI_RII_is_RT.png"/> |
+|<img style="margin:0px auto;display:block" width=200 height=200 src="Hardware_Setup/Result/Merge_image/LM.png"/>| **Car** | <img style="margin:0px auto;display:block" width=200 height=200 src="Hardware_Setup/Result/Merge_image/RM.png"/> |
+|<img style="margin:0px auto;display:block" width=200 height=200 src="Hardware_Setup/Result/Merge_image/merged_BIII_LIII_is_LB.png"/>| <img style="margin:0px auto;display:block" width=200 height=200 src="Hardware_Setup/Result/Merge_image/BM.png"/> | <img style="margin:0px auto;display:block" width=200 height=200 src="Hardware_Setup/Result/Merge_image/merged_BIV_RIV_is_RB.png"/> |
 
 ---
 
