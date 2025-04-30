@@ -1,2 +1,29 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Handle line endings
+*.py text eol=lf
+*.sh text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+
+# Treat Python scripts as text for diff/merge
+*.py diff
+
+# Set UTF-8 encoding for Python code
+*.py text working-tree-encoding=UTF-8
+
+# Mark config or shell script files
+*.sh text eol=lf
+*.bat text eol=crlf
+
+# Prevent Git from automatically normalizing line endings for binary data
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.bmp binary
+*.h5 binary
+*.pkl binary
+*.onnx binary
+
+# Optional: treat Jupyter notebooks nicely (if you use .ipynb files)
+*.ipynb merge=jupyternotebook

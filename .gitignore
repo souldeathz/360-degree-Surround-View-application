@@ -1,0 +1,63 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# PyInstaller
+*.spec
+dist/
+build/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# MyPy / Pyright / Pylint
+.mypy_cache/
+.pyright/
+pylint-report.txt
+
+# Logs
+*.log
+
+# VSCode settings
+.vscode/
+
+# JetBrains IDE (PyCharm)
+.idea/
+
+# macOS / Windows / Linux system files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*~
+*.bak
+
+# Ignore model/data output
+*.h5
+*.pt
+*.pkl
+*.onnx
+output/
+checkpoints/
+logs/
