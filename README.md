@@ -5,7 +5,7 @@ The project is not very complex, but it does involve some careful computations. 
 
 The hardware used in the Golf car project includes:
 
-<img style="margin:0px auto;display:block" width=400 src="./Hardware_Setup/layout_0.jpg"/>
+<img style="margin:0px auto;display:block" width=400 src="Hardware_Setup/layout_0.jpg"/>
 
 1. Four USB fisheye cameras, resolution: 1280x720.
 2. Jetson AGX Xavier developer kit: [Purchase This](https://developer.nvidia.com/buy-jetson)
@@ -34,7 +34,7 @@ Camera Installation on Golf Car : The installation of cameras requires careful p
 | |  |   |   |
 |:-:|:-:|:-:|:-:|
 |front|back|left|right|
-|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_Front.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_rear.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_left.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/FOV_right.jpg"/>|
+|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/FOV_Front.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/FOV_rear.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/FOV_left.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/FOV_right.jpg"/>|
 
 # Prepare work Step 2: camera calibration
 
@@ -47,7 +47,7 @@ Below are the images taken by the four cameras, in the order `front.png`、`back
 | |  |   |   |
 |:-:|:-:|:-:|:-:|
 |front|back|left|right|
-|<img style="margin:0px auto;display:block" width=200 src="./Dataset/Img_distortion_Testing/Front.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Dataset/Img_distortion_Testing/Rear.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Dataset/Img_distortion_Testing/Left.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="./Dataset/Img_distortion_Testing/Right.jpg"/>|
+|<img style="margin:0px auto;display:block" width=200 src="Dataset/Img_distortion_Testing/Front.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="Dataset/Img_distortion_Testing/Rear.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="Dataset/Img_distortion_Testing/Left.jpg"/>|<img style="margin:0px auto;display:block" width=200 src="Dataset/Img_distortion_Testing/Right.jpg"/>|
 
 The parameters of these cameras are stored in the yaml files `calibration_data_front.yaml`、`calibration_data_rear.yaml`、`calibration_data_left.yaml`、`calibration_data_right.yaml`, these files can be found in the [yaml](Development_Program/yaml) directory.
 
@@ -63,7 +63,7 @@ This is done by putting calibration patterns on the ground, taking the camera im
 
 See the illustration below:
 
-<img style="margin:0px auto;display:block" width=800 height=800 src="./Hardware_Setup/paramsettings.png"/>
+<img style="margin:0px auto;display:block" width=800 height=800 src="Hardware_Setup/paramsettings.png"/>
 
 Firstly you put four calibration boards at the four corners around the car (the blue squares). There are no particular restrictions on how large the board must be, only make sure you can see it clearly in the image.
 
@@ -80,7 +80,7 @@ we let each pixel correspond to 1cm, so the final bird-view image also has a res
 
 Note that the extension lines of the four sides of the vehicle area divide the entire bird's-eye view into eight parts: front-left (FL), front-center (F), front-right (FR), left (L), right (R), back-left (BL), back-center (B), and back-right (BR). Among them, FL (area I), FR (area II), BL (area III), and BR (area IV) are the overlapping areas of adjacent camera views, and they are the parts that we need to focus on for fusion processing. The areas F, R, L, and R belong to the individual views of each camera and do not require fusion processing.
 
-The above parameters are saved in [param_settings.py](./Development_Program/param_settings.py) 
+The above parameters are saved in [param_settings.py](Development_Program/param_settings.py) 
 
 # select feature points for the projection matrix
 
@@ -88,7 +88,7 @@ The process of transforming raw images into a bird’s-eye view relies on defini
 
 The process of transforming raw images into a bird’s-eye view relies on defining a projective transformation, which requires carefully selecting feature points. The key to achieving this transformation is the chessboard layout, which provides a structured reference for computing the projection matrix.
 
-1. Chessboard as the Key Reference ( [Step2_create_program_chessboard_layout.py](./Development_Program/Step2_create_program_chessboard_layout.py) )
+1. Chessboard as the Key Reference ( [Step2_create_program_chessboard_layout.py](Development_Program/Step2_create_program_chessboard_layout.py) )
 To accurately align each camera’s perspective, we generate a synthetic chessboard layout that acts as the foundation for perspective transformation. Each chessboard is warped and placed in **a predefined mapping area that represents the bird’s-eye view**. The key aspects of this step include:
 
 Creating a 5×7 or 7×5 chessboard grid for each camera (front, left, rear, right). `totalWidth = 1040 cm` and `totalHeight = 1191 cm`, representing the calibrated bird’s-eye view coverage.
@@ -99,7 +99,7 @@ This ensures that the mapping structure is consistent across all cameras and tha
 | |  |   |   |
 |:-:|:-:|:-:|:-:|
 |front|back|left|right|
-|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_front.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_rear.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_left.png"/>|<img style="margin:0px auto;display:block" width=200 src="./Hardware_Setup/Result/Undistorted_Images/warped_chessboard_Right.png"/>|
+|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/warped_chessboard_front.png"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/warped_chessboard_rear.png"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/warped_chessboard_left.png"/>|<img style="margin:0px auto;display:block" width=200 src="Hardware_Setup/Result/Undistorted_Images/warped_chessboard_Right.png"/>|
 
 2. Computing the Homography Transformation (`Step3_Projective_Transformation.py`)
 Once the chessboard reference is established, each camera image must be transformed into the **projected space** to match the predefined map. This is done through:  
