@@ -148,11 +148,15 @@ class VideoProcessor:
             print("✅ All resources released.")
 
 if __name__ == '__main__':
+    # Define 4 video sources
+    video_folder = "../Dataset/liverun_outdoor_VDO_Day"
+    # video_folder = "../Dataset/liverun_outdoor_VDO_Night_1"
+    # video_folder = "../Dataset/liverun_outdoor_VDO_Night_2"   
     video_paths = {
-        "front": "../Dataset/liverun_outdoor_VDO_Night_1/front.mp4",
-        "left": "../Dataset/liverun_outdoor_VDO_Night_1/left.mp4",
-        "rear": "../Dataset/liverun_outdoor_VDO_Night_1/rear.mp4",
-        "right": "../Dataset/liverun_outdoor_VDO_Night_1/right.mp4",
+        "front": os.path.join(video_folder, "front.mp4"),
+        "left": os.path.join(video_folder, "left.mp4"),
+        "rear": os.path.join(video_folder, "rear.mp4"),
+        "right": os.path.join(video_folder, "right.mp4"),
     }
     processor = VideoProcessor(video_paths, img_car)
     processor.run()
