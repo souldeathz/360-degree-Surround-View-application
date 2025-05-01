@@ -121,84 +121,75 @@ chessboard_config = {
 }
 
 def main():
-
-    # --------------------------------------------------------------------
-    # Create the figure
     fig, ax = plt.subplots(figsize=(8, 10))
-
-    # Background (bird's-eye view area)
-    ax.set_xlim(0, total_w)
-    ax.set_ylim(total_h, 0)  # Inverted to match top-down view
+    ax.set_xlim(outer_xl, outer_xr)
+    ax.set_ylim(outer_yb, outer_yt)
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_title("2D Bird’s-Eye View with Chessboard Overlay")
-
-    # Draw outer boundary (dotted black line)
-    outer_rect = patches.Rectangle((outer_xl, outer_yt), outer_xr - outer_xl, outer_yb - outer_yt, 
-                                   linewidth=2, edgecolor='black', linestyle="dotted", facecolor='none', label="Outer Shift Area")
+    
+    # --- Draw Outer and Inner Boundaries ---
+    outer_rect = patches.Rectangle((outer_xl, outer_yt), outer_xr - outer_xl, outer_yb - outer_yt,
+                                   linewidth=2, edgecolor='black', linestyle="dotted", facecolor='none')
     ax.add_patch(outer_rect)
 
-    # Draw inner boundary (dashed green line)
-    inner_rect = patches.Rectangle((inner_xl, inner_yt), inner_xr - inner_xl, inner_yb - inner_yt, 
-                                   linewidth=2, edgecolor='green', linestyle="dashed", facecolor='none', label="Inner Shift Area")
+    inner_rect = patches.Rectangle((inner_xl, inner_yt), inner_xr - inner_xl, inner_yb - inner_yt,
+                                   linewidth=2, edgecolor='green', linestyle="dashed", facecolor='none')
     ax.add_patch(inner_rect)
 
-    # Draw vehicle boundary (cyan)
-    car_rect = patches.Rectangle((xl, yt), xr - xl, yb - yt, linewidth=2, edgecolor='blue', facecolor='cyan', alpha=0.5, label="Vehicle")
+    # --- Draw 8 Sections ---
+    sections = {
+        "LT": (outer_xl, outer_yt, inner_xl - outer_xl, inner_yt - outer_yt),
+        "RT": (inner_xr, outer_yt, outer_xr - inner_xr, inner_yt - outer_yt),
+        "LB": (outer_xl, inner_yb, inner_xl - outer_xl, outer_yb - inner_yb),
+        "RB": (inner_xr, inner_yb, outer_xr - inner_xr, outer_yb - inner_yb),
+        "FM": (inner_xl, outer_yt, inner_xr - inner_xl, inner_yt - outer_yt),
+        "BM": (inner_xl, inner_yb, inner_xr - inner_xl, outer_yb - inner_yb),
+        "LM": (outer_xl, inner_yt, inner_xl - outer_xl, inner_yb - inner_yt),
+        "RM": (inner_xr, inner_yt, outer_xr - inner_xr, inner_yb - inner_yt),
+    }
+    colors = {
+        "LT": "orange", "RT": "violet", "LB": "lightgreen", "RB": "plum",
+        "FM": "red", "BM": "green", "LM": "yellow", "RM": "purple"
+    }
+    for label, (x, y, w, h) in sections.items():
+        rect = patches.Rectangle((x, y), w, h,
+                                 linewidth=1, edgecolor='black', facecolor=colors[label], alpha=0.4)
+        ax.add_patch(rect)
+        ax.text(x + w/2, y + h/2, label, fontsize=10, ha='center', va='center', color='black')
+
+    # --- Draw Vehicle ---
+    car_rect = patches.Rectangle((xl, yt), xr - xl, yb - yt,
+                                 linewidth=2, edgecolor='blue', facecolor='cyan', alpha=0.5)
     ax.add_patch(car_rect)
 
-    # Draw camera coverage areas
-    front_area = patches.Rectangle((outer_xl, outer_yt), total_w - 2 * shift_w, yt - outer_yt, linewidth=1, edgecolor='red', facecolor='red', alpha=0.3, label="Front Camera View")
-    back_area = patches.Rectangle((outer_xl, yb), total_w - 2 * shift_w, outer_yb - yb, linewidth=1, edgecolor='green', facecolor='green', alpha=0.3, label="Back Camera View")
-    left_area = patches.Rectangle((outer_xl, outer_yt), xl - outer_xl, total_h - 2 * shift_h, linewidth=1, edgecolor='yellow', facecolor='yellow', alpha=0.3, label="Left Camera View")
-    right_area = patches.Rectangle((xr, outer_yt), outer_xr - xr, total_h - 2 * shift_h, linewidth=1, edgecolor='purple', facecolor='purple', alpha=0.3, label="Right Camera View")
-
-    ax.add_patch(front_area)
-    ax.add_patch(back_area)
-    ax.add_patch(left_area)
-    ax.add_patch(right_area)
-
-    # Draw Chessboards
+    # --- Draw Chessboards ---
     for key, params in chessboard_config.items():
         dst_pts = params["inner_dst_pts"]
-        x_min, y_min = dst_pts[0]  # Top-left corner
-        x_max, y_max = dst_pts[3]  # Bottom-right corner
-        
+        x_min, y_min = dst_pts[0]
+        x_max, y_max = dst_pts[3]
         chessboard_rect = patches.Rectangle(
-            (x_min, y_min),
-            x_max - x_min,
-            y_max - y_min,
-            linewidth=2,
-            edgecolor='black',
-            facecolor='black',  # Chessboard in black
-            alpha=0.6,
-            label=f"{key.capitalize()} Chessboard"
+            (x_min, y_min), x_max - x_min, y_max - y_min,
+            linewidth=2, edgecolor='black', facecolor='black', alpha=0.6
         )
         ax.add_patch(chessboard_rect)
 
-    # Plot coordinate points
-    for label, (x, y) in {
-        "Car TL": (xl, yt), "Car TR": (xr, yt),
-        "Car BL": (xl, yb), "Car BR": (xr, yb),
-        "Outer TL": (outer_xl, outer_yt), "Outer TR": (outer_xr, outer_yt),
-        "Outer BL": (outer_xl, outer_yb), "Outer BR": (outer_xr, outer_yb),
-        "Inner TL": (inner_xl, inner_yt), "Inner TR": (inner_xr, inner_yt),
-        "Inner BL": (inner_xl, inner_yb), "Inner BR": (inner_xr, inner_yb)
-    }.items():
-        ax.scatter(x, y, color="black", marker="o", s=40)  # Plot points
-        ax.text(x + 10, y - 10, f"{label}\n({x}, {y})", fontsize=8, color="black")  # Add labels near points
+        # Plot chessboard corners
+        for (x, y) in dst_pts:
+            ax.scatter(x, y, color="black", marker="o", s=10)
+            ax.text(x + 5, y - 5, f"({int(x)}, {int(y)})", fontsize=8, color="black")
 
-    # Add legend
-    ax.legend(loc="upper right")
+    # --- Plot Outer, Inner, Car Corners ---
+    all_corners = [
+        (outer_xl, outer_yt), (outer_xr, outer_yt), (outer_xl, outer_yb), (outer_xr, outer_yb),
+        (inner_xl, inner_yt), (inner_xr, inner_yt), (inner_xl, inner_yb), (inner_xr, inner_yb),
+        (xl, yt), (xr, yt), (xl, yb), (xr, yb)
+    ]
 
-    # Add an arrow from (0, shift_h) to (shift_w, shift_h)
-    ax.annotate("", xy=(shift_w, shift_h), xytext=(0, shift_h),
-                arrowprops=dict(arrowstyle="->", color="blue", linewidth=2))
+    for (x, y) in all_corners:
+        ax.scatter(x, y, color="black", marker="o", s=10)
+        ax.text(x - 8, y - 8, f"({int(x)}, {int(y)})", fontsize=8, color="black")
 
-    # Label the arrow
-    ax.text(shift_w / 2, shift_h - 10, "Shift Boundary", fontsize=10, color="blue", ha="center")
-
-    # Show plot
+    plt.tight_layout()
     plt.show()
 
 if __name__ == "__main__":
