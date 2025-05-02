@@ -127,6 +127,7 @@ class LuminanceBalancer:
 
 class ImageStitcher:
     """Performs white balance adjustment using the average intensity of each channel"""
+
     @staticmethod
     def get_mask(img):
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -155,53 +156,43 @@ class ImageStitcher:
 
     @staticmethod
     def get_weight_mask_matrix(imA, imB, dist_threshold=5):
-        """
-        Generate a spatial weight matrix for blending two overlapping image regions
-        based on proximity to each image's outer polygon boundary.
-        """
-        # Compute the overlap region between two images where both have valid content
         overlapMask = ImageStitcher.get_overlap_region_mask(imA, imB)
-        # Invert the overlap mask to isolate non-overlapping regions from each image
+        
         overlapMaskInv = cv2.bitwise_not(overlapMask)
         Image.fromarray(overlapMask).save("out_Section_Images/overlapMask.png")
         Image.fromarray(overlapMaskInv).save("out_Section_Images/overlapMaskInv.png")
-        indices = np.where(overlapMask == 255) # Pixels where blending is needed
+        indices = np.where(overlapMask == 255)
 
-        # Extract non-overlapping regions (used for boundary estimation)
         imA_diff = cv2.bitwise_and(imA, imA, mask=overlapMaskInv)
         imB_diff = cv2.bitwise_and(imB, imB, mask=overlapMaskInv)
+
         Image.fromarray(imA_diff).save("out_Section_Images/imA_diff.png")
         Image.fromarray(imB_diff).save("out_Section_Images/imB_diff.png")
 
-        # Initialize the weight matrix G using the mask of image A
         G = (ImageStitcher.get_mask(imA).astype(np.float32) / 255.0)
         G_visual = (G * 255).astype(np.uint8)
         cv2.imwrite("out_Section_Images/G_weight.png", G_visual  )
-        # Extract outer polygon boundaries for both image regions
         polyA = ImageStitcher.get_outmost_polygon_boundary(imA_diff)
         polyB = ImageStitcher.get_outmost_polygon_boundary(imB_diff)
-        # Draw polygon A on its image for visualization
+        # วาด polygonA ลงบนภาพ imA_diff
         imA_with_poly = imA_diff.copy()
         cv2.polylines(imA_with_poly, [polyA], isClosed=True, color=(0, 255, 0), thickness=2)
         cv2.imwrite("out_Section_Images/imA_diff_with_poly.png", imA_with_poly)
 
-        # Draw polygon B on its image for visualization
+        # วาด polygonB ลงบนภาพ imB_diff
         imB_with_poly = imB_diff.copy()
         cv2.polylines(imB_with_poly, [polyB], isClosed=True, color=(0, 0, 255), thickness=2)
         cv2.imwrite("out_Section_Images/imB_diff_with_poly.png", imB_with_poly)
-        # Pause for inspection before proceeding
         input("🛑 Press Enter to continue after checking the masks and diff images...")
-
-         # Compute weight matrix G by comparing distances to polygon A and B
         for y, x in zip(*indices):
             xy_tuple = (int(x), int(y))
             distToB = cv2.pointPolygonTest(polyB, xy_tuple, True)
             if distToB < dist_threshold:
                 distToA = cv2.pointPolygonTest(polyA, xy_tuple, True)
-                # Use squared distances to emphasize distance effect
+                # ปรับค่าด้วยกำลังสอง
                 distToB **= 2
                 distToA **= 2
-                # Blend ratio based on distance proportion between A and B
+                # คำนวณค่า G จากสัดส่วนระหว่าง distToB และ distToA
                 if distToA + distToB != 0:
                     G[y, x] = distToB / (distToA + distToB)
                 else:
@@ -211,19 +202,19 @@ class ImageStitcher:
     @staticmethod
     def get_weights_and_masks(images):
         """
-        Merge image sections and save intermediate results.
-        Returns the final merged image.
+        รวมภาพในแต่ละส่วนและบันทึกไฟล์ผลลัพธ์
+        คืนค่า final merged image
         """
         front, left, back, right = images
 
         def save_image(image, filename):
             Image.fromarray(image).save(filename)
 
-        # Merge top-left region (front-left)
+        # บันทึกภาพ crop เพื่อตรวจสอบ (สามารถ comment ได้)
         threading.Thread(target=save_image, args=(ImageStitcher.FI(front), "out_Section_Images/FI_front.png")).start()
         threading.Thread(target=save_image, args=(ImageStitcher.LI(left), "out_Section_Images/LI_left.png")).start()
 
-        # Merge top-right region (front-right)
+        # รวมภาพซ้ายบน
         G0, M0 = ImageStitcher.get_weight_mask_matrix_Rev2(ImageStitcher.FI(front), ImageStitcher.LI(left))
         # Save weight matrix
         G0_visual = (G0 * 255).astype(np.uint8)
@@ -238,21 +229,21 @@ class ImageStitcher:
         merged_image_RT = ImageStitcher.merge(ImageStitcher.FII(front), ImageStitcher.RII(right), G1)
         threading.Thread(target=save_image, args=(merged_image_RT, "out_Section_Images/merged_FI_RII_is_RT.png")).start()
 
-        # Merge bottom-left region (back-left)
+        # รวมภาพซ้ายล่าง
         threading.Thread(target=save_image, args=(ImageStitcher.BIII(back), "out_Section_Images/BIII_back.png")).start()
         threading.Thread(target=save_image, args=(ImageStitcher.LIII(left), "out_Section_Images/LIII_left.png")).start()
         G2, M2 = ImageStitcher.get_weight_mask_matrix_Rev2(ImageStitcher.BIII(back), ImageStitcher.LIII(left))
         merged_image_LB = ImageStitcher.merge(ImageStitcher.BIII(back), ImageStitcher.LIII(left), G2)
         threading.Thread(target=save_image, args=(merged_image_LB, "out_Section_Images/merged_BIII_LIII_is_LB.png")).start()
 
-        # Merge bottom-right region (back-right)
+        # รวมภาพขวาล่าง
         threading.Thread(target=save_image, args=(ImageStitcher.BIV(back), "out_Section_Images/BIV_back.png")).start()
         threading.Thread(target=save_image, args=(ImageStitcher.RIV(right), "out_Section_Images/RIV_right.png")).start()
         G3, M3 = ImageStitcher.get_weight_mask_matrix_Rev2(ImageStitcher.BIV(back), ImageStitcher.RIV(right))
         merged_image_RB = ImageStitcher.merge(ImageStitcher.BIV(back), ImageStitcher.RIV(right), G3)
         threading.Thread(target=save_image, args=(merged_image_RB, "out_Section_Images/merged_BIV_RIV_is_RB.png")).start()
 
-        # Assemble all regions into the final output image
+        # บรรจุภาพที่ไม่ได้ merge (FM, BM, LM, RM)
         final_merged_image = np.zeros_like(front)
         np.copyto(final_merged_image[:yt, :xl], merged_image_LT)
         np.copyto(final_merged_image[:yt, xr:], merged_image_RT)
@@ -309,31 +300,33 @@ class ImageStitcher:
     @staticmethod
     def get_weights_and_masks_liverun(images):
         """
-        Merge image sections and save intermediate results.
-        Returns the final merged image.
+        รวมภาพในแต่ละส่วนและบันทึกไฟล์ผลลัพธ์
+        คืนค่า final merged image
         """
         front, left, back, right = images
 
 
-        # Merge top-left region (front-left)
+        # รวมภาพซ้ายบน
         start_merge = time.time()
         G0, M0 = ImageStitcher.get_weight_mask_matrix_liverun(ImageStitcher.FI(front), ImageStitcher.LI(left))
+        print(f"⏱ Merge LT took {time.time() - start_merge:.4f} seconds")
         merged_image_LT = ImageStitcher.merge(ImageStitcher.FI(front), ImageStitcher.LI(left), G0)
 
-        # Merge top-right region (front-right)
+        # รวมภาพขวาบน
         start_merge = time.time()
         G1, M1 = ImageStitcher.get_weight_mask_matrix_liverun(ImageStitcher.FII(front), ImageStitcher.RII(right))
+        print(f"⏱ Merge LT took {time.time() - start_merge:.4f} seconds")
         merged_image_RT = ImageStitcher.merge(ImageStitcher.FII(front), ImageStitcher.RII(right), G1)
 
-        # Merge bottom-left region (back-left)
+        # รวมภาพซ้ายล่าง
         G2, M2 = ImageStitcher.get_weight_mask_matrix_liverun(ImageStitcher.BIII(back), ImageStitcher.LIII(left))
         merged_image_LB = ImageStitcher.merge(ImageStitcher.BIII(back), ImageStitcher.LIII(left), G2)
 
-        # Merge bottom-right region (back-right)
+        # รวมภาพขวาล่าง
         G3, M3 = ImageStitcher.get_weight_mask_matrix_liverun(ImageStitcher.BIV(back), ImageStitcher.RIV(right))
         merged_image_RB = ImageStitcher.merge(ImageStitcher.BIV(back), ImageStitcher.RIV(right), G3)
 
-        # Assemble all regions into the final output image
+        # บรรจุภาพที่ไม่ได้ merge (FM, BM, LM, RM)
         final_merged_image = np.zeros_like(front)
         np.copyto(final_merged_image[:yt, :xl], merged_image_LT)
         np.copyto(final_merged_image[:yt, xr:], merged_image_RT)
@@ -349,6 +342,117 @@ class ImageStitcher:
     def merge(imA, imB, G):
         G_expanded = np.expand_dims(G, axis=-1)
         return (imA * G_expanded + imB * (1 - G_expanded)).astype(np.uint8)
+
+    @staticmethod
+    def get_weights_and_masks_gaussian(images, sigma=50):
+        front, left, back, right = images
+
+        # LT
+        A0 = ImageStitcher.FI(front)
+        B0 = ImageStitcher.LI(left)
+        G0_full, _ = ImageStitcher.get_gaussian_weight_mask(A0, B0, sigma)
+        G0 = G0_full[:A0.shape[0], :A0.shape[1]]
+        merged_LT = ImageStitcher.merge_gaussian(A0, B0, G0)
+
+        # RT
+        A1 = ImageStitcher.FII(front)
+        B1 = ImageStitcher.RII(right)
+        G1_full, _ = ImageStitcher.get_gaussian_weight_mask(A1, B1, sigma)
+        G1 = G1_full[:A1.shape[0], :A1.shape[1]]
+        merged_RT = ImageStitcher.merge_gaussian(A1, B1, G1)
+
+        # LB
+        A2 = ImageStitcher.BIII(back)
+        B2 = ImageStitcher.LIII(left)
+        G2_full, _ = ImageStitcher.get_gaussian_weight_mask(A2, B2, sigma)
+        G2 = G2_full[:A2.shape[0], :A2.shape[1]]
+        merged_LB = ImageStitcher.merge_gaussian(A2, B2, G2)
+
+        # RB
+        A3 = ImageStitcher.BIV(back)
+        B3 = ImageStitcher.RIV(right)
+        G3_full, _ = ImageStitcher.get_gaussian_weight_mask(A3, B3, sigma)
+        G3 = G3_full[:A3.shape[0], :A3.shape[1]]
+        merged_RB = ImageStitcher.merge_gaussian(A3, B3, G3)
+
+        # --- รวมภาพเป็น canvas ---
+        final = np.zeros_like(front)
+        final[:yt, :xl] = merged_LT
+        final[:yt, xr:] = merged_RT
+        final[yb:, :xl] = merged_LB
+        final[yb:, xr:] = merged_RB
+        final[:yt, xl:xr] = ImageStitcher.FM(front)
+        final[yb:, xl:xr] = ImageStitcher.BM(back)
+        final[yt:yb, :xl] = ImageStitcher.LM(left)
+        final[yt:yb, xr:] = ImageStitcher.RM(right)
+
+        return final
+
+    @staticmethod
+    def create_gaussian_weight_mask(shape, center, sigma):
+        h, w = shape
+        x = np.arange(w)
+        y = np.arange(h)
+        xx, yy = np.meshgrid(x, y)
+
+        cx, cy = center
+        G = np.exp(-((xx - cx) ** 2 + (yy - cy) ** 2) / (2 * sigma ** 2))
+
+        return G.astype(np.float32) 
+
+    @staticmethod
+    def get_gaussian_weight_mask(imA, imB, sigma=50):
+        maskA = ImageStitcher.get_mask(imA)
+        maskB = ImageStitcher.get_mask(imB)
+        overlap = cv2.bitwise_and(maskA, maskB)
+
+        coords = np.column_stack(np.where(overlap > 0))
+        G = np.ones_like(maskA, dtype=np.float32)  # ✅ ใช้ imA เต็มก่อน
+
+        if coords.size == 0:
+            return G, overlap
+
+        cy, cx = np.mean(coords, axis=0).astype(int)
+        G_overlay = ImageStitcher.create_gaussian_weight_mask(maskA.shape, (cx, cy), sigma)
+        G_overlay *= (overlap / 255.0).astype(np.float32)
+
+        # Optional: normalize overlay to max = 1
+        max_val = np.max(G_overlay)
+        if max_val > 0:
+            G_overlay /= max_val
+
+        G[overlap == 255] = G_overlay[overlap == 255]
+        return G, overlap
+
+    @staticmethod
+    def merge_gaussian(imA, imB, G):
+        """
+        Robust Gaussian blending with black fallback protection.
+        """
+        h, w = G.shape
+        G3 = np.repeat(G[:, :, np.newaxis], 3, axis=2)  # (h, w, 3)
+
+        imA_f = imA.astype(np.float32)
+        imB_f = imB.astype(np.float32)
+
+        blended = (imA_f * G3 + imB_f * (1 - G3)).astype(np.uint8)
+
+        # Fix black artifacts: if both imA & imB are black at that pixel, force zero or neighbor fill
+        grayA = cv2.cvtColor(imA, cv2.COLOR_BGR2GRAY)
+        grayB = cv2.cvtColor(imB, cv2.COLOR_BGR2GRAY)
+        maskA = (grayA > 0).astype(np.uint8)
+        maskB = (grayB > 0).astype(np.uint8)
+        overlap_mask = maskA & maskB
+
+        onlyA = (maskA == 1) & (maskB == 0)
+        onlyB = (maskB == 1) & (maskA == 0)
+
+        # Final result: blended + patch in non-overlap
+        result = blended.copy()
+        result[onlyA] = imA[onlyA]
+        result[onlyB] = imB[onlyB]
+
+        return result
 
     # Image cropping functions for extracting specific regions
     @staticmethod

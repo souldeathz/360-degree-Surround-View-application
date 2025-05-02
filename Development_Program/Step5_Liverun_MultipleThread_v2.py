@@ -104,8 +104,8 @@ class ImageProcessor:
 
 if __name__ == '__main__':
     # Define 4 video sources
-    # video_folder = "../Dataset/liverun_outdoor_VDO_Day"
-    video_folder = "../Dataset/liverun_outdoor_VDO_Night_1"
+    video_folder = "../Dataset/liverun_outdoor_VDO_Day"
+    # video_folder = "../Dataset/liverun_outdoor_VDO_Night_1"
     # video_folder = "../Dataset/liverun_outdoor_VDO_Night_2"   
     video_paths = {
         "front": os.path.join(video_folder, "front.mp4"),

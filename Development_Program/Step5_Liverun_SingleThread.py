@@ -12,8 +12,10 @@ from param_settings import img_car , Car_dst_points ,total_w , total_h
 # Select blending strategy for stitching 4-camera images:
 #   - "basic":     Uses simple alpha blending with overlay (faster, lower quality)
 #   - "weighted":  Uses weight map and mask for smooth transitions (slower, higher quality)
-BLENDING_STRATEGY = "basic"
-# BLENDING_STRATEGY = "weighted"
+#   - "gaussian":  Uses Gaussian-based spatial blending (fast and smooth blending)
+# BLENDING_STRATEGY = "gaussian"
+# BLENDING_STRATEGY = "basic"
+BLENDING_STRATEGY = "weighted"
 
 # ===============================
 # CLASS: ImageProcessor
@@ -80,8 +82,11 @@ class ImageProcessor:
                 # Merge using selected blending strategy
                 if blending_strategy == "weighted":
                     final_merged_image = ImageStitcher.get_weights_and_masks(warped_rgba_list)
+                elif blending_strategy == "gaussian":
+                    final_merged_image = ImageStitcher.get_weights_and_masks_gaussian(warped_rgba_list, sigma=60)
                 else:
                     final_merged_image = ImageAdjuster.merge_images(warped_rgba_list, mode='hard_overlay', alpha=0.25)
+
 
                 # Overlay car image at center of stitched view
                 merged_car_image = ImageAdjuster.overlay_image_perspective(final_merged_image, self.car, self.car_dst_points)
@@ -116,8 +121,8 @@ class ImageProcessor:
 
 if __name__ == '__main__':
     # Define 4 video sources
-    video_folder = "../Dataset/liverun_outdoor_VDO_Day"
-    # video_folder = "../Dataset/liverun_outdoor_VDO_Night_1"
+    # video_folder = "../Dataset/liverun_outdoor_VDO_Day"
+    video_folder = "../Dataset/liverun_outdoor_VDO_Night_1"
     # video_folder = "../Dataset/liverun_outdoor_VDO_Night_2"   
     video_paths = {
         "front": os.path.join(video_folder, "front.mp4"),

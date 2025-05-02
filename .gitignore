@@ -61,3 +61,8 @@ Thumbs.db
 output/
 checkpoints/
 logs/
+Development_Program/__pycache__/param_settings.cpython-310.pyc
+/Development_Program/out_Section_Images
+/Dataset/liverun_outdoor_VDO_Day/Original
+/Dataset/liverun_outdoor_VDO_Night_2/Original
+/Development_Program/out_Section_Images
