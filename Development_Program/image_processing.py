@@ -163,34 +163,25 @@ class ImageStitcher:
         overlapMask = ImageStitcher.get_overlap_region_mask(imA, imB)
         # Invert the overlap mask to isolate non-overlapping regions from each image
         overlapMaskInv = cv2.bitwise_not(overlapMask)
-        Image.fromarray(overlapMask).save("out_Section_Images/overlapMask.png")
-        Image.fromarray(overlapMaskInv).save("out_Section_Images/overlapMaskInv.png")
         indices = np.where(overlapMask == 255) # Pixels where blending is needed
 
         # Extract non-overlapping regions (used for boundary estimation)
         imA_diff = cv2.bitwise_and(imA, imA, mask=overlapMaskInv)
         imB_diff = cv2.bitwise_and(imB, imB, mask=overlapMaskInv)
-        Image.fromarray(imA_diff).save("out_Section_Images/imA_diff.png")
-        Image.fromarray(imB_diff).save("out_Section_Images/imB_diff.png")
 
         # Initialize the weight matrix G using the mask of image A
         G = (ImageStitcher.get_mask(imA).astype(np.float32) / 255.0)
         G_visual = (G * 255).astype(np.uint8)
-        cv2.imwrite("out_Section_Images/G_weight.png", G_visual  )
         # Extract outer polygon boundaries for both image regions
         polyA = ImageStitcher.get_outmost_polygon_boundary(imA_diff)
         polyB = ImageStitcher.get_outmost_polygon_boundary(imB_diff)
         # Draw polygon A on its image for visualization
         imA_with_poly = imA_diff.copy()
         cv2.polylines(imA_with_poly, [polyA], isClosed=True, color=(0, 255, 0), thickness=2)
-        cv2.imwrite("out_Section_Images/imA_diff_with_poly.png", imA_with_poly)
 
         # Draw polygon B on its image for visualization
         imB_with_poly = imB_diff.copy()
         cv2.polylines(imB_with_poly, [polyB], isClosed=True, color=(0, 0, 255), thickness=2)
-        cv2.imwrite("out_Section_Images/imB_diff_with_poly.png", imB_with_poly)
-        # Pause for inspection before proceeding
-        input("🛑 Press Enter to continue after checking the masks and diff images...")
 
          # Compute weight matrix G by comparing distances to polygon A and B
         for y, x in zip(*indices):
@@ -224,7 +215,7 @@ class ImageStitcher:
         threading.Thread(target=save_image, args=(ImageStitcher.LI(left), "out_Section_Images/LI_left.png")).start()
 
         # Merge top-right region (front-right)
-        G0, M0 = ImageStitcher.get_weight_mask_matrix_Rev2(ImageStitcher.FI(front), ImageStitcher.LI(left))
+        G0, M0 = ImageStitcher.get_weight_mask_matrix(ImageStitcher.FI(front), ImageStitcher.LI(left))
         # Save weight matrix
         G0_visual = (G0 * 255).astype(np.uint8)
         Image.fromarray(G0_visual).save("out_Section_Images/G0_weight_LT_liverun.png")
@@ -234,21 +225,21 @@ class ImageStitcher:
         # รวมภาพขวาบน
         threading.Thread(target=save_image, args=(ImageStitcher.FII(front), "out_Section_Images/FII_front.png")).start()
         threading.Thread(target=save_image, args=(ImageStitcher.RII(right), "out_Section_Images/RII_right.png")).start()
-        G1, M1 = ImageStitcher.get_weight_mask_matrix_Rev2(ImageStitcher.FII(front), ImageStitcher.RII(right))
+        G1, M1 = ImageStitcher.get_weight_mask_matrix(ImageStitcher.FII(front), ImageStitcher.RII(right))
         merged_image_RT = ImageStitcher.merge(ImageStitcher.FII(front), ImageStitcher.RII(right), G1)
         threading.Thread(target=save_image, args=(merged_image_RT, "out_Section_Images/merged_FI_RII_is_RT.png")).start()
 
         # Merge bottom-left region (back-left)
         threading.Thread(target=save_image, args=(ImageStitcher.BIII(back), "out_Section_Images/BIII_back.png")).start()
         threading.Thread(target=save_image, args=(ImageStitcher.LIII(left), "out_Section_Images/LIII_left.png")).start()
-        G2, M2 = ImageStitcher.get_weight_mask_matrix_Rev2(ImageStitcher.BIII(back), ImageStitcher.LIII(left))
+        G2, M2 = ImageStitcher.get_weight_mask_matrix(ImageStitcher.BIII(back), ImageStitcher.LIII(left))
         merged_image_LB = ImageStitcher.merge(ImageStitcher.BIII(back), ImageStitcher.LIII(left), G2)
         threading.Thread(target=save_image, args=(merged_image_LB, "out_Section_Images/merged_BIII_LIII_is_LB.png")).start()
 
         # Merge bottom-right region (back-right)
         threading.Thread(target=save_image, args=(ImageStitcher.BIV(back), "out_Section_Images/BIV_back.png")).start()
         threading.Thread(target=save_image, args=(ImageStitcher.RIV(right), "out_Section_Images/RIV_right.png")).start()
-        G3, M3 = ImageStitcher.get_weight_mask_matrix_Rev2(ImageStitcher.BIV(back), ImageStitcher.RIV(right))
+        G3, M3 = ImageStitcher.get_weight_mask_matrix(ImageStitcher.BIV(back), ImageStitcher.RIV(right))
         merged_image_RB = ImageStitcher.merge(ImageStitcher.BIV(back), ImageStitcher.RIV(right), G3)
         threading.Thread(target=save_image, args=(merged_image_RB, "out_Section_Images/merged_BIV_RIV_is_RB.png")).start()
 
