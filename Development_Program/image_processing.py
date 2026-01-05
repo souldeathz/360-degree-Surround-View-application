@@ -222,7 +222,6 @@ class ImageStitcher:
         merged_image_LT = ImageStitcher.merge(ImageStitcher.FI(front), ImageStitcher.LI(left), G0)
         threading.Thread(target=save_image, args=(merged_image_LT, "out_Section_Images/merged_FI_LI_is_LT.png")).start()
 
-        # รวมภาพขวาบน
         threading.Thread(target=save_image, args=(ImageStitcher.FII(front), "out_Section_Images/FII_front.png")).start()
         threading.Thread(target=save_image, args=(ImageStitcher.RII(right), "out_Section_Images/RII_right.png")).start()
         G1, M1 = ImageStitcher.get_weight_mask_matrix(ImageStitcher.FII(front), ImageStitcher.RII(right))
@@ -260,6 +259,128 @@ class ImageStitcher:
 
 
         threading.Thread(target=Image.fromarray(final_merged_image).save, args=("out_Section_Images/final_merged_image.png",)).start()
+        return final_merged_image
+
+    @staticmethod
+    def get_weight_mask_matrix_liverun(imA, imB):
+        """
+        Generates a Weight Matrix (G) using Distance Transform for smooth image blending.
+        Optimized to prevent Overflow and RuntimeWarnings for maximum execution speed.
+        """
+        # 1. Identify the overlapping region between Image A and Image B
+        overlapMask = ImageStitcher.get_overlap_region_mask(imA, imB)
+        overlapMaskInv = cv2.bitwise_not(overlapMask)
+        
+        # 2. Isolate the unique (non-overlapping) regions of each image
+        # These unique areas act as the boundaries for the distance calculation
+        imA_diff = cv2.bitwise_and(imA, imA, mask=overlapMaskInv)
+        imB_diff = cv2.bitwise_and(imB, imB, mask=overlapMaskInv)
+
+        # Convert unique regions into binary masks
+        polyA_mask = ImageStitcher.get_mask(imA_diff)
+        polyB_mask = ImageStitcher.get_mask(imB_diff)
+
+        # 3. Compute Distance Transform
+        # Measures the Euclidean distance (DIST_L2) from each pixel to the nearest boundary
+        distToA = cv2.distanceTransform(255 - polyA_mask, cv2.DIST_L2, 5)
+        distToB = cv2.distanceTransform(255 - polyB_mask, cv2.DIST_L2, 5)
+
+        # 4. Normalize distance values to prevent Overflow before squaring
+        # This keeps the values within a manageable range for float32 calculations
+        max_d = np.max([np.max(distToA), np.max(distToB)])
+        if max_d > 0:
+            distToA /= max_d
+            distToB /= max_d
+
+        # 5. Square the distances to create a more natural-looking gradient transition
+        distToA = np.square(distToA)
+        distToB = np.square(distToB)
+
+        # 6. Calculate the Weight Matrix G while protecting against Division by Zero
+        # G represents the influence of Image B at each pixel
+        denominator = distToA + distToB
+        eps = 1e-6 # Small epsilon value to handle zero-denominator cases
+        G = distToB / (denominator + eps)
+        
+        # Ensure the mask is only applied within the actual content area of Image A
+        mask_A = (ImageStitcher.get_mask(imA) > 0)
+        final_G = np.zeros_like(G)
+        final_G[mask_A] = G[mask_A]
+        
+        # Clean up any potential NaN or Inf values by replacing them with a neutral 0.5
+        final_G = np.nan_to_num(final_G, nan=0.5)
+
+        return final_G.astype(np.float32), overlapMask
+
+    @staticmethod
+    def merge(imA, imB, G):
+        """
+        Blends two images using weight matrix G with high-speed vectorized operations.
+        Fixes potential black image issues by expanding G's dimensions and preventing NaN values.
+        """
+        # Check G's dimensions: if it is (H, W), expand it to (H, W, 1) 
+        # to allow broadcasting across the 3 BGR color channels.
+        if G.ndim == 2:
+            G = G[:, :, np.newaxis]
+        
+        # Convert images to float32 for calculation to ensure precision and prevent overflow.
+        # Extract only the first 3 channels (BGR) to avoid issues with the Alpha channel.
+        imA_f = imA[:, :, :3].astype(np.float32)
+        imB_f = imB[:, :, :3].astype(np.float32)
+        
+        # Blending formula: Result = (ImageA * Weight) + (ImageB * (1 - Weight))
+        # This creates a smooth gradient transition between the two images.
+        res = imA_f * G + imB_f * (1.0 - G)
+        
+        # Clip values to the valid 0-255 range to prevent color wrapping 
+        # then convert back to uint8 for standard image display.
+        return np.clip(res, 0, 255).astype(np.uint8)
+
+    @staticmethod
+    def get_weights_and_masks_fast(images, G0, G1, G2, G3):
+        """
+        Performs high-speed 360-degree image stitching using pre-computed weight matrices (G).
+        This optimized version uses NumPy slicing to avoid redundant calculations in the main loop.
+        """
+        # Unpack individual camera frames from the list
+        front, left, back, right = images
+
+        # 1. BLENDING CORNERS: Merge the 4 overlapping corner regions
+        # Each corner is blended using its specific pre-computed weight matrix (G0-G3)
+        # Slicing is used to extract only the overlapping areas (defined by xl, xr, yt, yb)
+        
+        # Merge Front-Left (Top-Left corner)
+        merged_LT = ImageStitcher.merge(front[:yt, :xl], left[:yt, :xl], G0)
+        # Merge Front-Right (Top-Right corner)
+        merged_RT = ImageStitcher.merge(front[:yt, xr:], right[:yt, xr:], G1)
+        # Merge Back-Left (Bottom-Left corner)
+        merged_LB = ImageStitcher.merge(back[yb:, :xl], left[yb:, :xl], G2)
+        # Merge Back-Right (Bottom-Right corner)
+        merged_RB = ImageStitcher.merge(back[yb:, xr:], right[yb:, xr:], G3)
+
+        # 2. INITIALIZE CANVAS: Create an empty BGR image for the final result
+        # Note: We use 3 channels (BGR) to prevent transparency issues in the center region.
+        h, w = front.shape[:2]
+        final_merged_image = np.zeros((h, w, 3), dtype=np.uint8)
+        
+        # 3. ASSEMBLE CORNERS: Place the blended corner pieces onto the final canvas
+        final_merged_image[:yt, :xl] = merged_LT # Place Top-Left
+        final_merged_image[:yt, xr:] = merged_RT # Place Top-Right
+        final_merged_image[yb:, :xl] = merged_LB # Place Bottom-Left
+        final_merged_image[yb:, xr:] = merged_RB # Place Bottom-Right
+
+        # 4. ASSEMBLE SIDES: Copy the center sections from each camera directly
+        # Direct NumPy slicing is the fastest way to populate non-overlapping regions.
+        
+        # Front-center (Top side)
+        final_merged_image[:yt, xl:xr] = front[:yt, xl:xr, :3]
+        # Back-center (Bottom side)
+        final_merged_image[yb:, xl:xr] = back[yb:, xl:xr, :3]
+        # Left-center (Left side)
+        final_merged_image[yt:yb, :xl] = left[yt:yb, :xl, :3]
+        # Right-center (Right side)
+        final_merged_image[yt:yb, xr:] = right[yt:yb, xr:, :3]
+        
         return final_merged_image
 
     @staticmethod
